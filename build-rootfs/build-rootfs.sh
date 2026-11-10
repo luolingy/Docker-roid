@@ -15,8 +15,16 @@ echo ">> 准备 Alpine $ALPINE_VER ($ARCH) minirootfs"
 mkdir -p "$ROOT" "$OUT"
 cd "$ROOT"
 if [ ! -f alpine-minirootfs.tar.gz ]; then
-  wget -q "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/releases/${ARCH}/alpine-minirootfs-${ALPINE_VER}.0-${ARCH}.tar.gz" \
-    -O alpine-minirootfs.tar.gz
+  # 从 releases 页面解析最新的 ${ALPINE_VER}.x 补丁版本号
+  BASE_URL="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/releases/${ARCH}"
+  LATEST=$(wget -qO- "$BASE_URL/" | grep -o "alpine-minirootfs-${ALPINE_VER}\.[0-9]*-${ARCH}\.tar\.gz" | sort -V | tail -1)
+  if [ -z "$LATEST" ]; then
+    echo "!! 无法解析最新版本号，回退到 latest-releases.yaml"
+    LATEST=$(wget -qO- "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/releases/${ARCH}/latest-releases.yaml" \
+      | grep -A2 "branch: ${ALPINE_VER}" | grep "file: alpine-minirootfs" | head -1 | awk '{print $2}')
+  fi
+  echo ">> 下载 $LATEST"
+  wget -q "$BASE_URL/$LATEST" -O alpine-minirootfs.tar.gz
 fi
 tar -xzf alpine-minirootfs.tar.gz -C "$ROOT"
 

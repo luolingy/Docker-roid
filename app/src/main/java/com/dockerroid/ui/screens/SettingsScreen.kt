@@ -27,8 +27,9 @@ import com.dockerroid.data.vm.VmBundle
 import kotlinx.coroutines.launch
 import java.io.File
 
-/** 底座镜像源（部署时替换为你自己的对象存储/CDN）。 */
-private const val MIRROR_BASE = "https://mirror.example.com/docker-roid/0.1.0"
+/** 底座镜像源：GitHub Release 直链（objects.githubusercontent.com 重定向）。 */
+private const val MIRROR_BASE =
+    "https://github.com/luolingy/Docker-roid/releases/latest/download"
 
 /**
  * 设置页：VM 底座状态 / 资源摘要（P4 后段开放编辑）/ 诊断导出 / 关于。
