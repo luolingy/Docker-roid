@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+local.properties
+*.iml
+
+# Android Studio
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Native build artifacts
+build-rootfs/out/
+build-kernel/out/
+build-qemu/out/
+*.o
+*.so
+
+# OS
+.DS_Store
+Thumbs.db

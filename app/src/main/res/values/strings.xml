@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Docker-roid</string>
+
+    <!-- 通用 -->
+    <string name="action_start_vm">启动 VM</string>
+    <string name="action_stop_vm">停止 VM</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_home">主页</string>
+    <string name="nav_containers">容器</string>
+    <string name="nav_images">镜像</string>
+    <string name="nav_terminal">终端</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_resources">资源</string>
+
+    <!-- VM 状态 -->
+    <string name="vm_status_stopped">已停止</string>
+    <string name="vm_status_booting">启动中…</string>
+    <string name="vm_status_ready">就绪</string>
+    <string name="vm_status_error">错误</string>
+</resources>

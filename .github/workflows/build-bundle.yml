@@ -1,0 +1,81 @@
+name: Build VM Bundle
+
+# 构建 VM 底座：裁剪内核 + Alpine/Podman rootfs
+# 产物上传为 artifact，并发布到 Release（打 tag 时）
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'build-kernel/**'
+      - 'build-rootfs/**'
+      - '.github/workflows/build-bundle.yml'
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build-rootfs:
+    name: Rootfs (Alpine + Podman)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-user-static squashfs-tools
+
+      - name: Build rootfs
+        working-directory: build-rootfs
+        run: bash build-rootfs.sh
+
+      - name: Upload rootfs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs
+          path: build-rootfs/out/rootfs.squashfs
+          retention-days: 30
+
+  build-kernel:
+    name: Kernel (arm64 tinyconfig)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc-aarch64-linux-gnu flex bison bc libssl-dev libelf-dev
+
+      - name: Build kernel
+        working-directory: build-kernel
+        run: bash build-kernel.sh
+
+      - name: Upload kernel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel
+          path: build-kernel/out/Image
+          retention-days: 30
+
+  release:
+    name: Attach bundle to release
+    needs: [build-rootfs, build-kernel]
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: bundle
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bundle/Image
+            bundle/rootfs.squashfs

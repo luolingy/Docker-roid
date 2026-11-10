@@ -1,0 +1,120 @@
+package com.dockerroid.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
+import com.dockerroid.R
+import com.dockerroid.data.vm.VmBundle
+import com.dockerroid.data.vm.VmManager
+import com.dockerroid.data.vm.VmStatus
+
+@Composable
+fun HomeScreen(modifier: Modifier = Modifier) {
+    val status by VmManager.status.collectAsState()
+    val serial by VmManager.serialLog.collectAsState()
+    val context = LocalContext.current
+    val bundleReady = VmBundle.isReady(context)
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text("Docker-roid", style = MaterialTheme.typography.headlineMedium)
+
+        // 状态卡片
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusDot(status)
+                    Spacer(Modifier.size(8.dp))
+                    Text(statusText(status), style = MaterialTheme.typography.titleMedium)
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val running = status !is VmStatus.Stopped
+                    Button(
+                        onClick = { VmManager.startVm() },
+                        enabled = !running && bundleReady,
+                    ) { Text(stringResource(R.string.action_start_vm)) }
+                    OutlinedButton(
+                        onClick = { VmManager.stopVm() },
+                        enabled = running,
+                    ) { Text(stringResource(R.string.action_stop_vm)) }
+                }
+                if (!bundleReady) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "VM 底座（内核 + rootfs）尚未就绪，请先在设置中下载，或将文件放入 filesDir/vm-bundle/0.1.0/。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+
+        // 串口日志
+        Text("启动日志", style = MaterialTheme.typography.titleMedium)
+        Card(Modifier.fillMaxWidth()) {
+            Text(
+                text = if (serial.isEmpty()) "（尚无输出）" else serial.takeLast(60).joinToString("\n"),
+                fontFamily = FontFamily.Monospace,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(12.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusDot(status: VmStatus) {
+    val color = when (status) {
+        is VmStatus.Ready -> Color(0xFF2E7D32)
+        is VmStatus.Booting -> Color(0xFFF9A825)
+        is VmStatus.Error -> Color(0xFFC62828)
+        is VmStatus.Stopped -> Color(0xFF757575)
+    }
+    Spacer(
+        Modifier
+            .size(12.dp)
+            .background(color, CircleShape),
+    )
+}
+
+@Composable
+private fun statusText(status: VmStatus): String = when (status) {
+    is VmStatus.Stopped -> stringResource(R.string.vm_status_stopped)
+    is VmStatus.Booting -> status.bootStage ?: stringResource(R.string.vm_status_booting)
+    is VmStatus.Ready -> stringResource(R.string.vm_status_ready)
+    is VmStatus.Error -> "错误：${status.message}"
+}
