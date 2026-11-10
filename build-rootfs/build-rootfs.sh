@@ -16,14 +16,15 @@ echo ">> 准备 Alpine $ALPINE_VER ($ARCH) minirootfs"
 mkdir -p "$ROOT" "$OUT"
 cd "$ROOT"
 if [ ! -f alpine-minirootfs.tar.gz ]; then
-  BASE_URL="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/releases/${ARCH}"
+  # 注意：ALPINE_VER 已是 "3.20" 形式，目录就是 v3.20，不要再剥后缀
+  BASE_URL="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER}/releases/${ARCH}"
   # 主源：latest-releases.yaml（机器可读，比解析 HTML 稳）
   LATEST=$(wget -qO- "$BASE_URL/latest-releases.yaml" 2>/dev/null \
     | awk -v br="$ALPINE_VER" '/^date:/ {date=$2} $1=="branch:" && $2==br {seen=1} seen && $1=="file:" && $2 ~ /alpine-minirootfs/ {print $2; exit}')
   # 回退：镜像站目录列表
   if [ -z "$LATEST" ]; then
     echo "!! cdn latest-releases.yaml 不可达，尝试镜像站"
-    MIRROR_URL="https://mirrors.tuna.tsinghua.edu.cn/alpine/v${ALPINE_VER%.*}/releases/${ARCH}"
+    MIRROR_URL="https://mirrors.tuna.tsinghua.edu.cn/alpine/v${ALPINE_VER}/releases/${ARCH}"
     LATEST=$(wget -qO- "$MIRROR_URL/" 2>/dev/null \
       | grep -o "alpine-minirootfs-${ALPINE_VER//./\\.}\.[0-9]*-${ARCH}\.tar\.gz" | sort -uV | tail -1)
     BASE_URL="$MIRROR_URL"
@@ -41,8 +42,8 @@ tar -xzf alpine-minirootfs.tar.gz -C "$ROOT"
 
 echo ">> 配置 apk 源 + 安装 Podman/crun + 精简"
 cat > "$ROOT/etc/apk/repositories" <<EOF
-https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/main
-https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/community
+https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER}/main
+https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER}/community
 EOF
 
 # 用 chroot + qemu-user 静态（在非 arm64 宿主）
