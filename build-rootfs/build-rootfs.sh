@@ -48,7 +48,11 @@ EOF
 
 # 用 chroot + qemu-user 静态（在非 arm64 宿主）
 cp /usr/bin/qemu-aarch64-static "$ROOT/usr/bin/" 2>/dev/null || true
-chroot "$ROOT" /bin/sh -c '
+# GHA runner 需 sudo 才能 chroot；qemu-user-static 的 binfmt 让 aarch64 透明执行
+# 挂载 resolv.conf 保证 chroot 内 apk 有 DNS；退出时清理
+cp /etc/resolv.conf "$ROOT/etc/resolv.conf"
+sudo mount --bind /proc "$ROOT/proc" 2>/dev/null || true
+sudo chroot "$ROOT" /bin/sh -c '
   set -e
   apk update
   # 只装容器所需：podman + crun + 网络工具
@@ -56,8 +60,9 @@ chroot "$ROOT" /bin/sh -c '
       ca-certificates tzdata nftables
   # 精简：删文档/缓存
   rm -rf /var/cache/apk/* /usr/share/man/* /usr/share/doc/*
-'
-rm -f "$ROOT/usr/bin/qemu-aarch64-static"
+' || { echo "!! chroot apk 安装失败"; sudo umount "$ROOT/proc" 2>/dev/null || true; exit 1; }
+sudo umount "$ROOT/proc" 2>/dev/null || true
+rm -f "$ROOT/usr/bin/qemu-aarch64-static" "$ROOT/etc/resolv.conf"
 
 echo ">> 安装 docker-roid 启动脚本与服务（见 build-rootfs/guest/）"
 cp -r guest/etc "$ROOT/" 2>/dev/null || echo "   (guest 脚本未放置，跳过)"
