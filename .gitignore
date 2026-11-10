@@ -20,3 +20,4 @@ build-qemu/out/
 # OS
 .DS_Store
 Thumbs.db
+.kotlin/

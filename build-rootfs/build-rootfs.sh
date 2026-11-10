@@ -15,16 +15,26 @@ echo ">> 准备 Alpine $ALPINE_VER ($ARCH) minirootfs"
 mkdir -p "$ROOT" "$OUT"
 cd "$ROOT"
 if [ ! -f alpine-minirootfs.tar.gz ]; then
-  # 从 releases 页面解析最新的 ${ALPINE_VER}.x 补丁版本号
   BASE_URL="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/releases/${ARCH}"
-  LATEST=$(wget -qO- "$BASE_URL/" | grep -o "alpine-minirootfs-${ALPINE_VER}\.[0-9]*-${ARCH}\.tar\.gz" | sort -V | tail -1)
+  # 主源：latest-releases.yaml（机器可读，比解析 HTML 稳）
+  LATEST=$(wget -qO- "$BASE_URL/latest-releases.yaml" 2>/dev/null \
+    | awk -v br="$ALPINE_VER" '/^date:/ {date=$2} $1=="branch:" && $2==br {seen=1} seen && $1=="file:" && $2 ~ /alpine-minirootfs/ {print $2; exit}')
+  # 回退：镜像站目录列表
   if [ -z "$LATEST" ]; then
-    echo "!! 无法解析最新版本号，回退到 latest-releases.yaml"
-    LATEST=$(wget -qO- "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VER%.*}/releases/${ARCH}/latest-releases.yaml" \
-      | grep -A2 "branch: ${ALPINE_VER}" | grep "file: alpine-minirootfs" | head -1 | awk '{print $2}')
+    echo "!! cdn latest-releases.yaml 不可达，尝试镜像站"
+    MIRROR_URL="https://mirrors.tuna.tsinghua.edu.cn/alpine/v${ALPINE_VER%.*}/releases/${ARCH}"
+    LATEST=$(wget -qO- "$MIRROR_URL/" 2>/dev/null \
+      | grep -o "alpine-minirootfs-${ALPINE_VER//./\\.}\.[0-9]*-${ARCH}\.tar\.gz" | sort -uV | tail -1)
+    BASE_URL="$MIRROR_URL"
   fi
-  echo ">> 下载 $LATEST"
-  wget -q "$BASE_URL/$LATEST" -O alpine-minirootfs.tar.gz
+  # 再回退：固定已知可用版本
+  if [ -z "$LATEST" ]; then
+    echo "!! 动态解析失败，回退固定版本 3.20.6"
+    LATEST="alpine-minirootfs-3.20.6-${ARCH}.tar.gz"
+  fi
+  echo ">> 下载 $LATEST（来自 $BASE_URL）"
+  wget --tries=3 -O alpine-minirootfs.tar.gz "$BASE_URL/$LATEST" || { echo "!! 下载失败"; exit 1; }
+  ls -lh alpine-minirootfs.tar.gz
 fi
 tar -xzf alpine-minirootfs.tar.gz -C "$ROOT"
 
