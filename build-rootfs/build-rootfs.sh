@@ -4,6 +4,7 @@
 # 需在 x86_64 Linux 上用 qemu-user 或原生 arm64 上执行
 # ============================================================
 set -euo pipefail
+set -x   # trace 每条命令，GHA 日志可见
 
 ALPINE_VER="${ALPINE_VER:-3.20}"
 ARCH="aarch64"
