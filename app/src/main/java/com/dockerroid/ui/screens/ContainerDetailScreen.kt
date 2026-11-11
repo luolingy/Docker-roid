@@ -38,6 +38,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -127,6 +128,23 @@ private fun LogsPane(repo: EngineRepository, id: String, modifier: Modifier = Mo
     }
 
     Column(modifier.fillMaxSize().padding(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val cs2 = remember { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
+            var exportMsg by remember { mutableStateOf<String?>(null) }
+            exportMsg?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
+            TextButton(onClick = {
+                cs2.launch {
+                    try {
+                        val dir = ctx.getExternalFilesDir(null) ?: ctx.cacheDir
+                        val f = repo.exportLogs(id, java.io.File(dir, "container-$id.log"))
+                        withContext(Dispatchers.Main) { exportMsg = "已导出: ${f.absolutePath}" }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) { exportMsg = "导出失败: ${e.message}" }
+                    }
+                }
+            }) { Text("导出日志", style = MaterialTheme.typography.labelMedium) }
+        }
         Text(
             lines.value.joinToString("\n").ifEmpty { "（暂无日志）" },
             fontFamily = FontFamily.Monospace,

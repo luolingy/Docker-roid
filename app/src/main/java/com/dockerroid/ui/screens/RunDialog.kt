@@ -36,6 +36,7 @@ fun RunDialog(repo: EngineRepository, onDismiss: () -> Unit) {
     var ports by remember { mutableStateOf("") }     // host:container 换行分隔
     var binds by remember { mutableStateOf("") }     // /src:/dst 换行分隔
     var restart by remember { mutableStateOf("no") } // no/always/unless-stopped
+    var network by remember { mutableStateOf("") }   // 网络模式，空=默认
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -52,6 +53,7 @@ fun RunDialog(repo: EngineRepository, onDismiss: () -> Unit) {
                 OutlinedTextField(env, { env = it }, label = { Text("环境变量（KEY=VAL，每行一个）") }, minLines = 1, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(ports, { ports = it }, label = { Text("端口映射（8080:80，每行一个）") }, minLines = 1, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(binds, { binds = it }, label = { Text("挂载（/src:/dst，每行一个）") }, minLines = 1, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(network, { network = it }, label = { Text("网络（可选：bridge/host/自定义名）") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 RestartPicker(restart, { restart = it })
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             }
@@ -79,6 +81,7 @@ fun RunDialog(repo: EngineRepository, onDismiss: () -> Unit) {
                             HostConfig = CreateHostConfig(
                                 PortBindings = bindings.ifEmpty { null },
                                 Binds = parseLines(binds).ifEmpty { null },
+                                NetworkMode = network.trim().ifBlank { null },
                                 RestartPolicy = if (restart != "no")
                                     com.dockerroid.data.docker.model.RestartPolicy(Name = restart) else null,
                             ),

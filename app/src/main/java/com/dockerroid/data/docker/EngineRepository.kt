@@ -212,6 +212,17 @@ class EngineRepository(
 
     fun logs(id: String, tail: Int = 200, follow: Boolean): Flow<String> = api.logs(id, tail, follow)
 
+    /** 导出容器日志到文件（一次性拉 tail 行），返回文件路径。 */
+    suspend fun exportLogs(id: String, outFile: java.io.File, tail: Int = 2000): java.io.File {
+        return kotlinx.coroutines.withContext(Dispatchers.IO) {
+            val sb = StringBuilder()
+            api.logs(id, tail, follow = false).collect { sb.appendLine(it) }
+            outFile.parentFile?.mkdirs()
+            outFile.writeText(sb.toString())
+            outFile
+        }
+    }
+
     fun stats(id: String): Flow<DockerApi.StatsSample> = api.stats(id)
 
     /** 单次 inspect（不做流；UI 进详情页时拉一次）。 */
