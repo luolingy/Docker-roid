@@ -44,10 +44,14 @@ fun SettingsScreen(settingsRepo: SettingsRepository, modifier: Modifier = Modifi
     val context = LocalContext.current
     val cs = rememberCoroutineScope()
     val settings by settingsRepo.current.collectAsState()
-    val bundleReady = VmBundle.isReady(context) && com.dockerroid.data.vm.QemuBinaries.isPresent(context)
+    // 响应式：下载完成后 tick 自增以重新计算就绪状态
+    var refreshTick by remember { mutableStateOf(0) }
     var exportedPath by remember { mutableStateOf<String?>(null) }
     var downloadLine by remember { mutableStateOf<String?>(null) }
     var downloading by remember { mutableStateOf(false) }
+    val bundleReady = remember(refreshTick, downloading) {
+        VmBundle.isReady(context) && com.dockerroid.data.vm.QemuBinaries.isPresent(context)
+    }
     var dnsInput by remember(settings.dnsServers) { mutableStateOf(settings.dnsServers) }
 
     Column(
@@ -73,14 +77,17 @@ fun SettingsScreen(settingsRepo: SettingsRepository, modifier: Modifier = Modifi
                                 // 先下 kernel+rootfs，再下 qemu
                                 BundleDownloader(context).downloadAll(MIRROR_BASE).collect { p ->
                                     downloadLine = if (p.error != null) "失败：${p.error}"
-                                    else "${p.file}: ${p.bytesDone / 1024} / ${p.bytesTotal / 1024} KB"
+                                    else if (p.bytesTotal > 0) "${p.file}: ${p.bytesDone / 1024} / ${p.bytesTotal / 1024} KB"
+                                    else "${p.file}: ${p.bytesDone / 1024} KB（总大小未知）"
                                     if (p.error != null) { downloading = false; return@collect }
                                 }
                                 com.dockerroid.data.vm.QemuBinaries.downloadFrom(context, MIRROR_BASE).collect { p ->
                                     downloadLine = if (p.error != null) "失败：${p.error}"
-                                    else "${p.file}: ${p.bytesDone / 1024} / ${p.bytesTotal / 1024} KB"
+                                    else if (p.bytesTotal > 0) "${p.file}: ${p.bytesDone / 1024} / ${p.bytesTotal / 1024} KB"
+                                    else "${p.file}: ${p.bytesDone / 1024} KB"
                                     if (p.error != null || p.done) downloading = false
                                 }
+                                refreshTick++   // 触发重新计算就绪状态
                             }
                         },
                         enabled = !downloading,

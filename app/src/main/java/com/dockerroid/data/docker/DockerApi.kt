@@ -88,12 +88,12 @@ class DockerApi(
         }.getOrNull() ?: 0L
     }
 
-    /** 构删镜像（docker build）。body 为 tar 包（含 Dockerfile），此处用字符串 Dockerfile 简单构建。 */
-    fun buildImage(dockerfileTarPath: String, tag: String): Flow<String> = flow {
-        // 说明：真正的 build 需要 tar 上下文。此处占位实现——读取 tar 文件 POST /build
-        val file = java.io.File(dockerfileTarPath)
+    /** 构建镜像（docker build）。body 为 tar 包（含 Dockerfile），tag 通过 query 传。 */
+    fun buildImage(tarPath: String, tag: String): Flow<String> = flow {
+        val file = java.io.File(tarPath)
         if (!file.exists()) { emit("错误：构建上下文不存在"); return@flow }
-        val req = factory.request("/build")
+        val q = "t=" + java.net.URLEncoder.encode(tag, "UTF-8")
+        val req = factory.request("/build?$q")
             .post(file.readBytes().toRequestBody("application/x-tar".toMediaType()))
             .build()
         client.newCall(req).execute().use { resp ->

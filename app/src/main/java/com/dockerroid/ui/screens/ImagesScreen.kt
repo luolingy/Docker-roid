@@ -49,6 +49,7 @@ fun ImagesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
     val engineOk by repo.engineAvailable.collectAsState()
     val vmStatus by VmManager.status.collectAsState()
     var showPullDialog by remember { mutableStateOf(false) }
+    var showBuildDialog by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -56,6 +57,7 @@ fun ImagesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
             Spacer(Modifier.weight(1f))
             if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
             TextButton(onClick = { showPullDialog = true }, enabled = engineOk) { Text("拉取") }
+            TextButton(onClick = { showBuildDialog = true }, enabled = engineOk) { Text("构建") }
             IconButton(onClick = { repo.refreshImages() }) { Icon(Icons.Filled.Refresh, "刷新") }
         }
 
@@ -77,6 +79,9 @@ fun ImagesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
 
     if (showPullDialog) {
         PullDialog(repo, onDismiss = { showPullDialog = false })
+    }
+    if (showBuildDialog) {
+        BuildDialog(repo, onDismiss = { showBuildDialog = false })
     }
 }
 

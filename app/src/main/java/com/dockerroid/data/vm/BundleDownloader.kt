@@ -11,10 +11,28 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * VM 底座下载器：首次启动时从镜像源下载内核与 rootfs。
- *
- * 均衡档体积策略：APK 不含大文件（~55-75MB 之外的底座按需下载）。
- * 下载完成后校验 sha256（可选），写入 filesDir/vm-bundle/<version>/。
+ * 镜像源配置：GitHub Release 直链 + 多个加速前缀（国内优先）。
+ * 下载时按顺序尝试，任一成功即停止。
+ */
+object Mirrors {
+    private const val RELEASE = "https://github.com/luolingy/Docker-roid/releases/latest/download"
+
+    /** 加速前缀（按速度/稳定性排序），空串代表直链。 */
+    private val PROXIES = listOf(
+        "https://ghfast.top/",
+        "https://gh-proxy.com/",
+        "",  // 直链兜底
+    )
+
+    /** 返回某文件的所有候选 URL（加速优先，直链兜底）。 */
+    fun candidates(fileName: String): List<String> {
+        val direct = "$RELEASE/$fileName"
+        return PROXIES.map { if (it.isEmpty()) direct else "$it$direct" }
+    }
+}
+
+/**
+ * VM 底座下载器：内核与 rootfs。支持多镜像回退。
  */
 class BundleDownloader(private val context: Context) {
 
@@ -26,11 +44,8 @@ class BundleDownloader(private val context: Context) {
         val error: String? = null,
     )
 
-    /**
-     * 下载完整底座。mirrorBase 形如 "https://dl.example.com/docker-roid/0.1.0"。
-     * 文件名约定：Image / rootfs.squashfs。
-     */
     fun downloadAll(mirrorBase: String): Flow<DownloadProgress> = flow {
+        // mirrorBase 参数保留兼容；实际用 Mirrors.candidates
         val dir = context.filesDir.resolve("vm-bundle").resolve(VmBundle.BUNDLE_VERSION)
         dir.mkdirs()
 
@@ -40,30 +55,40 @@ class BundleDownloader(private val context: Context) {
                 emit(DownloadProgress(name, 1, 1, done = true))
                 continue
             }
-            try {
-                val url = "$mirrorBase/$name"
-                download(url, target) { done, total ->
-                    emit(DownloadProgress(name, done, total))
-                }
-                emit(DownloadProgress(name, 1, 1, done = true))
-            } catch (e: Exception) {
-                Log.e(TAG, "下载 $name 失败", e)
-                target.delete()
-                emit(DownloadProgress(name, 0, 0, error = e.message ?: "下载失败"))
-                return@flow
+            val ok = tryDownload(name, target) { done, total ->
+                emit(DownloadProgress(name, done, total))
             }
+            if (!ok) { emit(DownloadProgress(name, 0, 0, error = "$name 所有镜像均失败")); return@flow }
+            emit(DownloadProgress(name, 1, 1, done = true))
         }
     }.flowOn(Dispatchers.IO)
 
-    private inline fun download(url: String, target: File, onProgress: (Long, Long) -> Unit) {
+    /** 依次尝试候选 URL，成功返回 true。 */
+    private suspend fun tryDownload(
+        name: String,
+        target: File,
+        onProgress: suspend (Long, Long) -> Unit,
+    ): Boolean {
+        for (url in Mirrors.candidates(name)) {
+            try {
+                Log.i("BundleDownloader", "尝试: $url")
+                downloadOnce(url, target) { d, t -> onProgress(d, t) }
+                if (target.exists() && target.length() > 0) return true
+            } catch (e: Exception) {
+                Log.w("BundleDownloader", "$url 失败: ${e.message}")
+                target.delete()
+            }
+        }
+        return false
+    }
+
+    private suspend fun downloadOnce(url: String, target: File, onProgress: suspend (Long, Long) -> Unit) {
         val conn = URL(url).openConnection() as HttpURLConnection
         conn.connectTimeout = 15_000
         conn.readTimeout = 60_000
         conn.instanceFollowRedirects = true
         try {
-            if (conn.responseCode !in 200..299) {
-                throw java.io.IOException("HTTP ${conn.responseCode} for $url")
-            }
+            if (conn.responseCode !in 200..299) throw java.io.IOException("HTTP ${conn.responseCode}")
             val total = conn.contentLengthLong
             val tmp = File(target.absolutePath + ".tmp")
             conn.inputStream.use { input ->
@@ -71,24 +96,16 @@ class BundleDownloader(private val context: Context) {
                     val buf = ByteArray(64 * 1024)
                     var done = 0L
                     while (true) {
-                        val n = input.read(buf)
-                        if (n < 0) break
-                        out.write(buf, 0, n)
-                        done += n
+                        val n = input.read(buf); if (n < 0) break
+                        out.write(buf, 0, n); done += n
                         if (total > 0) onProgress(done, total)
                     }
                 }
             }
-            if (!tmp.renameTo(target)) {
-                target.writeBytes(tmp.readBytes())
-                tmp.delete()
-            }
+            if (total > 0 && tmp.length() != total) throw java.io.IOException("大小不符 ${tmp.length()}/$total")
+            if (!tmp.renameTo(target)) { target.writeBytes(tmp.readBytes()); tmp.delete() }
         } finally {
             conn.disconnect()
         }
-    }
-
-    companion object {
-        private const val TAG = "BundleDownloader"
     }
 }

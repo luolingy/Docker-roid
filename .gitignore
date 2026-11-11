@@ -21,3 +21,7 @@ build-qemu/out/
 .DS_Store
 Thumbs.db
 .kotlin/
+
+# jniLibs 由 GHA build-qemu 从 Termux 生成，不入库（约 71MB）
+app/src/main/jniLibs/
+

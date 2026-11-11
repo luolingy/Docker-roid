@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,7 +45,10 @@ fun HomeScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
     val df by repo.diskUsage.collectAsState()
     val freed by repo.lastPruneFreed.collectAsState()
     val context = LocalContext.current
-    val bundleReady = VmBundle.isReady(context) && QemuBinaries.isPresent(context)
+    // 状态变化时重算底座就绪（vm 状态变化即重组）
+    val bundleReady = remember(status) {
+        VmBundle.isReady(context) && QemuBinaries.isPresent(context)
+    }
     val running = status !is VmStatus.Stopped
 
     Column(

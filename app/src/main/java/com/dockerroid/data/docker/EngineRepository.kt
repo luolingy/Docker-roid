@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -257,6 +258,18 @@ class EngineRepository(
         api.pullImage(name)
             .catch { e -> _lastError.value = e.message; emit(DockerApi.PullProgress(error = e.message)) }
             .flowOn(Dispatchers.IO)
+
+    /** 从 Dockerfile 构建镜像：返回构建日志流。 */
+    fun buildImage(dockerfile: String, tag: String): Flow<String> = flow {
+        val dir = java.io.File(System.getProperty("java.io.tmpdir"), "dd-build-${System.nanoTime()}").apply { mkdirs() }
+        try {
+            val tar = BuildContext.tarOfDockerfile(dir, dockerfile)
+            api.buildImage(tar.absolutePath, tag).collect { emit(it) }
+            refreshImages()
+        } finally {
+            dir.deleteRecursively()
+        }
+    }.catch { e -> emit("构建失败：${e.message}") }.flowOn(Dispatchers.IO)
 
     // ---- 事件流（触发即时刷新） ----
 

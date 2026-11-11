@@ -63,3 +63,20 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 - JAVA_HOME=E:\JavaRunTime\jdk21 (JDK 21.0.4)
 - 编译：`$env:GRADLE_USER_HOME='F:\android-build-tools\gradle-home'; $env:JAVA_HOME='E:\JavaRunTime\jdk21'; .\gradlew.bat :app:assembleDebug --no-daemon`
 - 构建/测试日志：F:\android-build-tools\build-log-*.txt / test-log-*.txt
+
+## 2026-11-11 下午进展
+- ✅ QEMU 方案定案：NDK 交叉编译不可行（QEMU 硬依赖 glib，bionic 无）→ 改用 Termux runtime bundle（bin+32依赖so）32.9MB
+- ✅ Release v0.2.0 发布：Image 43MB + rootfs 30.7MB + qemu-bundle.tar.gz 32.9MB
+- ✅ App 新增：TarExtractor(纯Kotlin tar解压) + QemuBinaries下载解压 + QemuRunner 设 LD_LIBRARY_PATH/PREFIX/QEMU_DATADIR
+- ✅ 新功能：容器暂停/恢复/重命名/提交镜像；Home 系统信息卡(版本/容器/镜像/镜像占用)+prune；ContainerDetail 操作栏
+- ⚠️ 未真机复测（用户要求测试前许可）；编译已绿(BUILD SUCCESSFUL)
+- 待测清单：装APK→下载底座(约107MB)→启动VM→看READY→podman run hello-world
+
+## 2026-11-12 真机联调进展（已暂停，继续写功能）
+- ✅ QEMU 在真机跑通：QEMU 11.1.3（Termux runtime + patchelf 重写 SONAME/NEEDED，70个库全部纳入 jniLibs）
+- ✅ 库闭包完整：libp11-kit/libelf/libargp/libdw/libzstd 等深层依赖全解决
+- ✅ jniLibs 方案：nativeLibraryDir exec（Android 唯一可 exec 位置），APK 41MB
+- ✅ rom 数据：qemu-share(efi-*.rom 7个1.1MB) 打进 assets，首启解压到 filesDir/qemu/share/qemu
+- ⏳ 待测：完整 VM boot 到 READY（刚装含 rom 的 APK，下一步验证）
+- 已知待修：下载进度 UI 在 chunked 响应下显示 0/0（加速器无 Content-Length）
+- 镜像加速已加：ghfast.top + gh-proxy.com + 直链，自动回退

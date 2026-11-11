@@ -51,8 +51,8 @@ android {
 
     packaging {
         jniLibs {
-            // 不压缩 native 库，便于 QEMU/terminal 直接 mmap
-            useLegacyPackaging = false
+            // 必须解压 native 库到 nativeLibraryDir（QEMU 及其依赖库从此处 exec/加载）
+            useLegacyPackaging = true
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

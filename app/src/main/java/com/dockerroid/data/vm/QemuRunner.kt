@@ -57,18 +57,15 @@ class QemuRunner(
                 val pb = ProcessBuilder(cmd)
                     .directory(context.filesDir)
                     .redirectErrorStream(true)
-                // QEMU 依赖 Termux 打包的 .so：设 LD_LIBRARY_PATH
-                val libDir = QemuBinaries.libDir(context)
-                if (libDir.exists()) {
-                    pb.environment()["LD_LIBRARY_PATH"] = libDir.absolutePath
-                    // QEMU 需要 share/qemu 数据（bios 等）
-                    val shareDir = QemuBinaries.rootDir(context).resolve("share/qemu")
-                    if (shareDir.exists()) {
-                        pb.environment()["QEMU_DATADIR"] = shareDir.absolutePath
-                    }
-                    // Termux 二进制可能读 $PREFIX 环境
-                    pb.environment()["PREFIX"] = QemuBinaries.rootDir(context).absolutePath
-                }
+                // QEMU 及依赖库都在 nativeLibraryDir（随 APK 打包），linker 自动搜索该目录。
+                // 若还有下载的额外库，追加 filesDir/qemu/lib。
+                val nativeLib = context.applicationInfo.nativeLibraryDir
+                val extraLib = QemuBinaries.libDir(context)
+                pb.environment()["LD_LIBRARY_PATH"] =
+                    listOf(nativeLib, extraLib.absolutePath).joinToString(":")
+                val shareDir = QemuBinaries.rootDir(context).resolve("share/qemu")
+                if (shareDir.exists()) pb.environment()["QEMU_DATADIR"] = shareDir.absolutePath
+                pb.environment()["PREFIX"] = QemuBinaries.rootDir(context).absolutePath
                 val proc = pb.start()
                 process = proc
                 VmManager.onProcessLaunched(pidOf(proc))
