@@ -63,37 +63,18 @@ jobs:
           retention-days: 30
 
   build-qemu:
-    name: QEMU (arm64, NDK)
+    name: QEMU (arm64 runtime from Termux)
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install NDK (r27)
-        run: |
-          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
-          SDKM="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          [ -x "$SDKM" ] || SDKM=$(find "$SDK_ROOT" -name sdkmanager -type f | head -1)
-          echo "using sdkmanager: $SDKM"
-          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
-          "$SDKM" --install "ndk;27.0.12077973"
-          NDK="$SDK_ROOT/ndk/27.0.12077973"
-          echo "NDK_HOME=$NDK" >> "$GITHUB_ENV"
-          test -x "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang" \
-            && echo "NDK clang OK" || { echo "NDK clang missing"; ls "$NDK/toolchains/llvm/prebuilt/"*; exit 1; }
-
-      - name: Install build deps
+      - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build pkg-config libglib2.0-dev libpixman-1-dev python3-venv
+          sudo apt-get install -y -qq binutils
 
-      - name: Build QEMU
+      - name: Assemble QEMU runtime
         working-directory: build-qemu
         run: bash build-qemu.sh
 
@@ -101,7 +82,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qemu
-          path: build-qemu/out/qemu-system-aarch64
+          path: build-qemu/out/qemu-bundle.tar.gz
           retention-days: 30
 
   release:
@@ -124,4 +105,4 @@ jobs:
           files: |
             bundle/Image
             bundle/rootfs.squashfs
-            bundle/qemu-system-aarch64
+            bundle/qemu-bundle.tar.gz

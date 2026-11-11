@@ -11,86 +11,80 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * QEMU 二进制管理：优先内置 assets（若有），否则从 Release 下载到 filesDir/bin/。
- * 与 [BundleDownloader] 同一镜像源。
+ * QEMU 二进制管理：从 Release 下载 qemu-bundle.tar.gz（含 bin + 30+ 依赖 .so），
+ * 解压到 filesDir/qemu/。运行 QEMU 时需把 lib 目录加入 LD_LIBRARY_PATH。
  */
 object QemuBinaries {
-    private const val ASSET_NAME = "qemu-system-aarch64"
+    private const val BUNDLE_NAME = "qemu-bundle.tar.gz"
     private const val EXEC_NAME = "qemu-system-aarch64"
 
-    /** 供 UI 显示的下载源（由 SettingsScreen 传入的 MIRROR_BASE 决定）。 */
-    fun targetPath(context: Context): File =
-        context.filesDir.resolve("bin").resolve(EXEC_NAME)
+    /** QEMU 解压根目录（含 bin/ 与 lib/）。 */
+    fun rootDir(context: Context): File = context.filesDir.resolve("qemu")
+
+    /** 可执行文件路径。 */
+    fun targetPath(context: Context): File = rootDir(context).resolve("bin").resolve(EXEC_NAME)
+
+    /** 库目录（LD_LIBRARY_PATH）。 */
+    fun libDir(context: Context): File = rootDir(context).resolve("lib")
 
     fun isPresent(context: Context): Boolean {
         val f = targetPath(context)
         return f.exists() && f.length() > 0 && f.canExecute()
     }
 
-    /**
-     * 确保二进制可用：先看 assets，再下载。
-     * 这是同步阻塞版本（VM 启动路径用）；下载请用 [downloadFrom]。
-     */
+    /** VM 启动路径：确保可用（不下载，只校验/内置）。 */
     fun ensureExtracted(context: Context): File {
         val out = targetPath(context)
         if (out.exists() && out.canExecute()) return out
 
-        out.parentFile?.mkdirs()
-        // 1) 优先内置 assets
+        // 尝试内置 assets 的 tar.gz
         try {
-            context.assets.open(ASSET_NAME).use { input ->
-                out.outputStream().use { output -> input.copyTo(output) }
-            }
-            out.setExecutable(true)
-            return out
-        } catch (_: Exception) { /* 无内置，走下载 */ }
+            val tmp = File(context.cacheDir, BUNDLE_NAME)
+            context.assets.open(BUNDLE_NAME).use { i -> tmp.outputStream().use { o -> i.copyTo(o) } }
+            TarExtractor.extractTarGz(tmp, rootDir(context))
+            tmp.delete()
+            if (out.exists()) { out.setExecutable(true); return out }
+        } catch (_: Exception) { /* 无内置 */ }
 
-        // 2) assets 无 → 必须已由 [downloadFrom] 下载
         throw java.io.FileNotFoundException(
-            "qemu-system-aarch64 未就绪（请在设置中下载底座）"
+            "QEMU 未就绪（请在设置中下载底座）"
         )
     }
 
-    /**
-     * 从镜像源下载 QEMU 二进制（流式进度）。
-     * @param mirrorBase 如 https://github.com/.../releases/latest/download
-     */
+    /** 从镜像源下载 qemu-bundle.tar.gz 并解压（流式进度）。 */
     fun downloadFrom(context: Context, mirrorBase: String): Flow<BundleDownloader.DownloadProgress> = flow {
-        val out = targetPath(context)
-        if (out.exists() && out.length() > 0) {
-            out.setExecutable(true)
-            emit(BundleDownloader.DownloadProgress("qemu-system-aarch64", 1, 1, done = true))
-            return@flow
+        if (isPresent(context)) {
+            emit(BundleDownloader.DownloadProgress(BUNDLE_NAME, 1, 1, done = true)); return@flow
         }
-        out.parentFile?.mkdirs()
-        val url = "$mirrorBase/$ASSET_NAME"
-        val tmp = File(out.absolutePath + ".tmp")
+        val tmp = File(context.cacheDir, BUNDLE_NAME)
         try {
+            val url = "$mirrorBase/$BUNDLE_NAME"
             val conn = URL(url).openConnection() as HttpURLConnection
             conn.connectTimeout = 15_000
-            conn.readTimeout = 60_000
+            conn.readTimeout = 120_000
             conn.instanceFollowRedirects = true
             if (conn.responseCode !in 200..299) throw java.io.IOException("HTTP ${conn.responseCode}")
             val total = conn.contentLengthLong
             conn.inputStream.use { input ->
                 tmp.outputStream().use { o ->
-                    val buf = ByteArray(64 * 1024)
-                    var done = 0L
+                    val buf = ByteArray(64 * 1024); var done = 0L
                     while (true) {
                         val n = input.read(buf); if (n < 0) break
                         o.write(buf, 0, n); done += n
-                        if (total > 0) emit(BundleDownloader.DownloadProgress(ASSET_NAME, done, total))
+                        if (total > 0) emit(BundleDownloader.DownloadProgress(BUNDLE_NAME, done, total))
                     }
                 }
             }
             conn.disconnect()
-            if (!tmp.renameTo(out)) { out.writeBytes(tmp.readBytes()); tmp.delete() }
-            out.setExecutable(true)
-            emit(BundleDownloader.DownloadProgress(ASSET_NAME, 1, 1, done = true))
-            Log.i("QemuBinaries", "QEMU 下载完成: ${out.absolutePath} (${out.length()} bytes)")
+            emit(BundleDownloader.DownloadProgress("qemu: 解压中…", 1, 1))
+            TarExtractor.extractTarGz(tmp, rootDir(context))
+            tmp.delete()
+            targetPath(context).setExecutable(true)
+            emit(BundleDownloader.DownloadProgress(BUNDLE_NAME, 1, 1, done = true))
+            Log.i("QemuBinaries", "QEMU 就绪: ${targetPath(context)}")
         } catch (e: Exception) {
-            tmp.delete(); out.delete()
-            emit(BundleDownloader.DownloadProgress(ASSET_NAME, 0, 0, error = e.message ?: "下载失败"))
+            tmp.delete()
+            emit(BundleDownloader.DownloadProgress(BUNDLE_NAME, 0, 0, error = e.message ?: "下载/解压失败"))
         }
     }.flowOn(Dispatchers.IO)
 }
