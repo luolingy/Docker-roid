@@ -44,10 +44,18 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 - AVF/pKVM 后端未实现（均衡档默认 QEMU TCG）
 
 ## 下一步（待人，一起测试时）
-1. 手机装最新 APK（含设置编辑+端口转发）
-2. 测试"下载底座"（GitHub 直链；若被墙换 ghproxy 前缀）
-3. 启动 VM → 看 BootStage 状态机走到 READY → 终端 `podman run hello-world`
-4. 若手机切无线调试：adb pair 后无线继续
+1. 等 GHA 编出 qemu-system-aarch64 → Release 补上该资产
+2. 手机重装 APK → 设置点"下载底座"（会同时下 qemu）→ 启动 VM
+3. 看 BootStage 走到 READY → 终端 `podman run hello-world`
+4. 若无线调试端口变化：重新 adb connect IP:PORT
+
+## 真机测试记录（2026-11-11，无线调试 192.168.1.11:41809）
+- ✅ 配对+连接成功；APK 安装启动无崩溃
+- ✅ **应用内下载底座真实工作**：Image 43MB + rootfs 30.7MB 下载完成，大小与 Release 一致，UI 正确翻"已就绪"
+- ✅ 启动 VM 链路：UI→VmService→Settings→VmBundle→QemuRunner 全跑通
+- ❌ 卡在最后一步：APK 未含 qemu-system-aarch64（预期，待 GHA 编好后可下载）
+- 错误 UI 反馈正确：显示"错误：qemu-system-aarch64"
+- 修复 GHA QEMU job 4 轮问题：NDK 版本不存在 → JDK11 不满足 sdkmanager(需17) → setup-android action 自身 bug → 改用预装 SDK+手动 sdkmanager
 
 ## 验收环境（F 盘，勿删）
 - F:\android-build-tools\gradle-8.9\ + gradle-home\（GRADLE_USER_HOME 必须指 F 盘）

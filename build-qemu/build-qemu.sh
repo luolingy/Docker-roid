@@ -13,12 +13,17 @@ JOBS="${JOBS:-$(nproc)}"
 
 TOOLCHAIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
 CC="$TOOLCHAIN/bin/aarch64-linux-android${API}-clang"
+CXX="$TOOLCHAIN/bin/aarch64-linux-android${API}-clang++"
 AR="$TOOLCHAIN/bin/llvm-ar"
 STRIP="$TOOLCHAIN/bin/llvm-strip"
 NM="$TOOLCHAIN/bin/llvm-nm"
 RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
 
 [ -x "$CC" ] || { echo "!! NDK clang 不存在: $CC"; exit 1; }
+
+# QEMU configure 通过 --cc/--cxx + --cpu 推导 ar/nm 等，不认 --ar/--nm/--ranlib/--strip
+# 用环境变量方式传入这些工具
+export AR="$AR" NM="$NM" RANLIB="$RANLIB" STRIP="$STRIP"
 
 mkdir -p "$OUT"
 cd "$OUT"
@@ -34,7 +39,7 @@ echo ">> configure（NDK 交叉，aarch64-softmmu + TCG + SLIRP）"
 export LDFLAGS="-Wl,-z,max-page-size=16384"
 ./configure \
   --target-list=aarch64-softmmu \
-  --cc="$CC" --cxx="${CC}++" --ar="$AR" --strip="$STRIP" --nm="$NM" --ranlib="$RANLIB" \
+  --cc="$CC" --cxx="$CXX" --cpu=aarch64 \
   --disable-werror \
   --without-default-features \
   --enable-tcg --enable-slirp --enable-fdt=builtin \
@@ -42,8 +47,8 @@ export LDFLAGS="-Wl,-z,max-page-size=16384"
   --disable-curses --disable-vnc --disable-spice \
   --disable-audio --disable-alsa --disable-pulse --disable-coreaudio \
   --disable-docs --disable-tools --disable-guest-agent --disable-capstone \
-  --disable-werror --disable-plugins --disable-user \
-  --extra-cflags="-D__ANDROID__ -O2" \
+  --disable-plugins --disable-user \
+  --extra-cflags="-O2" \
   --extra-ldflags="-Wl,-z,max-page-size=16384"
 
 echo ">> make（$(nproc) 并行）"

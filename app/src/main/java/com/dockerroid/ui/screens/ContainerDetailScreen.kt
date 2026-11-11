@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -47,11 +50,28 @@ fun ContainerDetailScreen(
     repo: EngineRepository,
     containerId: String,
     modifier: Modifier = Modifier,
+    runningState: String? = null,
 ) {
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("日志", "资源", "详情")
+    var renameOpen by remember { mutableStateOf(false) }
+    var commitOpen by remember { mutableStateOf(false) }
+    val isRunning = runningState == "running"
+    val isPaused = runningState == "paused"
 
     Column(modifier.fillMaxSize()) {
+        // 操作栏
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            TextButton(onClick = { if (isPaused) repo.unpauseContainer(containerId) else repo.pauseContainer(containerId) }) {
+                Text(if (isPaused) "恢复" else "暂停", style = MaterialTheme.typography.bodySmall)
+            }
+            TextButton(onClick = { repo.restartContainer(containerId) }) { Text("重启", style = MaterialTheme.typography.bodySmall) }
+            TextButton(onClick = { renameOpen = true }) { Text("重命名", style = MaterialTheme.typography.bodySmall) }
+            TextButton(onClick = { commitOpen = true }) { Text("提交镜像", style = MaterialTheme.typography.bodySmall) }
+        }
         TabRow(selectedTabIndex = tab) {
             tabs.forEachIndexed { i, t ->
                 Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) })
@@ -63,6 +83,31 @@ fun ContainerDetailScreen(
             2 -> InspectPane(repo, containerId, Modifier.weight(1f))
         }
     }
+
+    if (renameOpen) {
+        SimpleInputDialog("重命名容器", "新名称", onDismiss = { renameOpen = false }) { name ->
+            repo.renameContainer(containerId, name); renameOpen = false
+        }
+    }
+    if (commitOpen) {
+        SimpleInputDialog("提交为镜像", "镜像名:tag（如 myimg:latest）", onDismiss = { commitOpen = false }) { spec ->
+            val parts = spec.split(":", limit = 2)
+            repo.commitContainer(containerId, parts[0], parts.getOrElse(1) { "latest" })
+            commitOpen = false
+        }
+    }
+}
+
+@Composable
+private fun SimpleInputDialog(title: String, label: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var v by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { OutlinedTextField(v, { v = it }, label = { Text(label) }, singleLine = true) },
+        confirmButton = { TextButton(onClick = { if (v.isNotBlank()) onConfirm(v.trim()) }) { Text("确定") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
 }
 
 @Composable

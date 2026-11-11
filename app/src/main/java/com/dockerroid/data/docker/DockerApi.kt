@@ -21,7 +21,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-
 /**
  * Docker Engine REST 客户端（轻量手写，OkHttp + kotlinx.serialization）。
  *
@@ -77,6 +76,41 @@ class DockerApi(
 
     fun systemDf(): SystemDf = execute(get("/system/df"))
 
+    /** 清理未使用的镜像/容器/网络/卷（docker system prune）。返回释放的字节数。 */
+    fun prune(volumes: Boolean = false): Long {
+        val q = "filters=%7B%7D" + if (volumes) "&dangling=false" else ""
+        val resp = executeNoBody(post("/system/prune", query = q))
+        val text = resp.body?.string().orEmpty()
+        resp.close()
+        // 不同引擎返回字段：SpaceReclaimed 或 SpaceReclaimed
+        return runCatching {
+            json.parseToJsonElement(text).jsonObject["SpaceReclaimed"]?.jsonPrimitive?.content?.toLongOrNull()
+        }.getOrNull() ?: 0L
+    }
+
+    /** 构删镜像（docker build）。body 为 tar 包（含 Dockerfile），此处用字符串 Dockerfile 简单构建。 */
+    fun buildImage(dockerfileTarPath: String, tag: String): Flow<String> = flow {
+        // 说明：真正的 build 需要 tar 上下文。此处占位实现——读取 tar 文件 POST /build
+        val file = java.io.File(dockerfileTarPath)
+        if (!file.exists()) { emit("错误：构建上下文不存在"); return@flow }
+        val req = factory.request("/build")
+            .post(file.readBytes().toRequestBody("application/x-tar".toMediaType()))
+            .build()
+        client.newCall(req).execute().use { resp ->
+            val reader = resp.body?.charStream() ?: return@flow
+            reader.forEachLine { line ->
+                if (line.contains("\"stream\"")) {
+                    val msg = runCatching {
+                        json.parseToJsonElement(line).jsonObject["stream"]?.jsonPrimitive?.content
+                    }.getOrNull() ?: line
+                    emit(msg.trimEnd())
+                } else if (line.contains("\"error\"")) {
+                    emit("错误：" + line)
+                }
+            }
+        }
+    }.flowOn(Dispatchers.IO)
+
     fun ping(): Boolean = try {
         executeNoBody(factory.request("/_ping").get().build()).close(); true
     } catch (_: Exception) { false }
@@ -113,6 +147,21 @@ class DockerApi(
 
     fun inspectContainer(id: String): com.dockerroid.data.docker.model.ContainerInspect =
         execute(get("/containers/$id/json"))
+
+    fun renameContainer(id: String, newName: String) {
+        val body = """{"name":"$newName"}"""
+        executeNoBody(post("/containers/$id/rename", body)).close()
+    }
+
+    /** 提交容器为镜像（docker commit）。返回新镜像 Id。 */
+    fun commitContainer(id: String, repo: String, tag: String = "latest", comment: String = ""): String {
+        val q = "container=$id&repo=$repo&tag=$tag&comment=" + java.net.URLEncoder.encode(comment, "UTF-8")
+        val resp = executeNoBody(post("/commit", query = q))
+        val text = resp.body?.string().orEmpty()
+        resp.close()
+        return runCatching { json.parseToJsonElement(text).jsonObject["Id"]?.jsonPrimitive?.content }
+            .getOrNull() ?: ""
+    }
 
     // ---- Images ----
 

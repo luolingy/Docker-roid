@@ -97,11 +97,12 @@ fun DockerDroidRoot() {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
                         }
                     }
-                    com.dockerroid.ui.screens.ContainerDetailScreen(repo, d)
+                    val st = repo.containers.collectAsState().value.items.firstOrNull { it.Id == d }?.State
+                    com.dockerroid.ui.screens.ContainerDetailScreen(repo, d, runningState = st)
                 }
             }
             else -> when (tab) {
-                Tab.Home -> HomeScreen(m)
+                Tab.Home -> HomeScreen(repo, m)
                 Tab.Containers -> ContainersScreen(repo, m, onOpenDetail = { detailId = it })
                 Tab.Images -> ImagesScreen(repo, m)
                 Tab.Resources -> ResourcesScreen(repo, m)

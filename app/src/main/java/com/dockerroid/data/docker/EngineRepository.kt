@@ -183,8 +183,24 @@ class EngineRepository(
     fun startContainer(id: String) = scope.launch { io { api.startContainer(id) }; refreshContainers() }
     fun stopContainer(id: String) = scope.launch { io { api.stopContainer(id) }; refreshContainers() }
     fun restartContainer(id: String) = scope.launch { io { api.restartContainer(id) }; refreshContainers() }
+    fun pauseContainer(id: String) = scope.launch { io { api.pauseContainer(id) }; refreshContainers() }
+    fun unpauseContainer(id: String) = scope.launch { io { api.unpauseContainer(id) }; refreshContainers() }
     fun removeContainer(id: String, force: Boolean) =
         scope.launch { io { api.removeContainer(id, force) }; refreshContainers() }
+    fun renameContainer(id: String, newName: String) =
+        scope.launch { io { api.renameContainer(id, newName) }; refreshContainers() }
+    fun commitContainer(id: String, repo: String, tag: String) =
+        scope.launch { io { api.commitContainer(id, repo, tag) }; refreshImages() }
+
+    /** 系统清理，返回释放字节数。 */
+    fun prune(): kotlinx.coroutines.Job = scope.launch {
+        val freed = runCatching { io { api.prune() } }.getOrDefault(0L)
+        refreshAll()
+        _lastPruneFreed.value = freed
+    }
+
+    private val _lastPruneFreed = MutableStateFlow(0L)
+    val lastPruneFreed: StateFlow<Long> = _lastPruneFreed.asStateFlow()
 
     fun createAndStart(req: CreateContainerRequest) = scope.launch {
         io { val id = api.createContainer(req); api.startContainer(id) }

@@ -29,16 +29,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.dockerroid.R
+import com.dockerroid.data.docker.EngineRepository
+import com.dockerroid.data.vm.QemuBinaries
 import com.dockerroid.data.vm.VmBundle
 import com.dockerroid.data.vm.VmManager
 import com.dockerroid.data.vm.VmStatus
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
     val status by VmManager.status.collectAsState()
     val serial by VmManager.serialLog.collectAsState()
+    val engineOk by repo.engineAvailable.collectAsState()
+    val info by repo.systemInfo.collectAsState()
+    val df by repo.diskUsage.collectAsState()
+    val freed by repo.lastPruneFreed.collectAsState()
     val context = LocalContext.current
-    val bundleReady = VmBundle.isReady(context)
+    val bundleReady = VmBundle.isReady(context) && QemuBinaries.isPresent(context)
+    val running = status !is VmStatus.Stopped
 
     Column(
         modifier = modifier
@@ -49,7 +56,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     ) {
         Text("Docker-roid", style = MaterialTheme.typography.headlineMedium)
 
-        // 状态卡片
+        // VM 状态卡
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -59,23 +66,42 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val running = status !is VmStatus.Stopped
-                    Button(
-                        onClick = { VmManager.startVm() },
-                        enabled = !running && bundleReady,
-                    ) { Text(stringResource(R.string.action_start_vm)) }
-                    OutlinedButton(
-                        onClick = { VmManager.stopVm() },
-                        enabled = running,
-                    ) { Text(stringResource(R.string.action_stop_vm)) }
+                    Button(onClick = { VmManager.startVm() }, enabled = !running && bundleReady) {
+                        Text(stringResource(R.string.action_start_vm))
+                    }
+                    OutlinedButton(onClick = { VmManager.stopVm() }, enabled = running) {
+                        Text(stringResource(R.string.action_stop_vm))
+                    }
                 }
                 if (!bundleReady) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "VM 底座（内核 + rootfs）尚未就绪，请先在设置中下载，或将文件放入 filesDir/vm-bundle/0.1.0/。",
+                        "底座未就绪（内核 + rootfs + QEMU）。请到设置页点“下载底座”。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
+                }
+            }
+        }
+
+        // 引擎系统信息（就绪时）
+        if (engineOk && info != null) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("引擎", style = MaterialTheme.typography.titleMedium)
+                    InfoLine("版本", info!!.ServerVersion.ifBlank { "—" })
+                    InfoLine("容器", "${info!!.ContainersRunning} 运行 / ${info!!.Containers} 总")
+                    InfoLine("镜像", "${info!!.Images}")
+                    InfoLine("架构", info!!.Architecture.ifBlank { "—" })
+                    df?.let { d ->
+                        val total = d.Images.sumOf { it.Size }
+                        InfoLine("镜像占用", formatSize(total))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { repo.prune() }) { Text("清理未使用数据 (prune)") }
+                    if (freed > 0) {
+                        Text("已释放 ${formatSize(freed)}", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
@@ -97,6 +123,15 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun InfoLine(label: String, value: String) {
+    Row(Modifier.fillMaxWidth()) {
+        Text(label, style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 12.dp))
+        Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
 private fun StatusDot(status: VmStatus) {
     val color = when (status) {
         is VmStatus.Ready -> Color(0xFF2E7D32)
@@ -104,11 +139,7 @@ private fun StatusDot(status: VmStatus) {
         is VmStatus.Error -> Color(0xFFC62828)
         is VmStatus.Stopped -> Color(0xFF757575)
     }
-    Spacer(
-        Modifier
-            .size(12.dp)
-            .background(color, CircleShape),
-    )
+    Spacer(Modifier.size(12.dp).background(color, CircleShape))
 }
 
 @Composable
