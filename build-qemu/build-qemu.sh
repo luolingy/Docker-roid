@@ -43,9 +43,6 @@ export LDFLAGS="-Wl,-z,max-page-size=16384"
   --disable-werror \
   --without-default-features \
   --enable-tcg --enable-slirp --enable-fdt=builtin \
-  --disable-gtk --disable-sdl --disable-opengl --disable-virglrenderer \
-  --disable-curses --disable-vnc --disable-spice \
-  --disable-audio --disable-alsa --disable-pulse --disable-coreaudio \
   --disable-docs --disable-tools --disable-guest-agent --disable-capstone \
   --disable-plugins --disable-user \
   --extra-cflags="-O2" \
