@@ -75,15 +75,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK
+      - name: Install NDK (r27)
         run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install "ndk;27.0.12077973" > /dev/null
-          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
-          ls "$ANDROID_SDK_ROOT/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/" | grep -E 'aarch64.*clang$' | head -2
+          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          SDKM="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKM" ] || SDKM=$(find "$SDK_ROOT" -name sdkmanager -type f | head -1)
+          echo "using sdkmanager: $SDKM"
+          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+          "$SDKM" --install "ndk;27.0.12077973"
+          NDK="$SDK_ROOT/ndk/27.0.12077973"
+          echo "NDK_HOME=$NDK" >> "$GITHUB_ENV"
+          test -x "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang" \
+            && echo "NDK clang OK" || { echo "NDK clang missing"; ls "$NDK/toolchains/llvm/prebuilt/"*; exit 1; }
 
       - name: Install build deps
         run: |
