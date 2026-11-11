@@ -69,13 +69,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Android NDK
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Install NDK
         run: |
-          sdkmanager --install "ndk;26.3.11579264"
-          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> $GITHUB_ENV
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install "ndk;27.0.12077973" > /dev/null
+          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+          ls "$ANDROID_SDK_ROOT/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/" | grep -E 'aarch64.*clang$' | head -2
 
       - name: Install build deps
         run: |
