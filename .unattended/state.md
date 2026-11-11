@@ -12,6 +12,11 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
    另 verify.ps1 结构验收 35/35 PASS
 
 ## 已完成
+- VM 基座 GHA 构建闭环 ✅：kernel Image 41MB + rootfs.squashfs 29.3MB 已发布到 Release v0.1.0
+  （调试修 5 问题：Alpine URL 版本剥错/chroot sudo/trace 定位/permissions write/GPG 签名→本地关闭）
+- P4前段补充：可编辑设置页（内存/盘滑条+DNS+自启，DataStore）+ PortForwardDialog(QMP 动态转发) + VmBundle 读设置 + QemuRunner 传 DNS
+- 真机测试（Redmi Note 9 4G/Android 12）：安装✅ 启动✅ UI✅ 诊断导出✅ 修 16KB 页检测 bug✅
+- MIRROR_BASE 已指向 GitHub Releases latest/download
 - P0 设计文档 DESIGN.md（三路线对比/架构/瘦身策略）
 - P1 骨架：Gradle 结构、Manifest、VmManager/VmService/QemuRunner/VmBundle/QemuBinaries、串口状态机、底部导航+Home
 - 构建脚手架：build-qemu / build-kernel(+裁剪config) / build-rootfs(+guest init 标记脚本)
@@ -38,11 +43,11 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 - MIRROR_BASE = "https://mirror.example.com/..." 占位，需换真实底座镜像源
 - AVF/pKVM 后端未实现（均衡档默认 QEMU TCG）
 
-## 下一步（待人）
-1. 手机装 app-debug.apk 实测（无底座时应显示"未就绪"）
-2. Linux/WSL 跑 build-rootfs.sh + build-kernel.sh → 产物放 filesDir/vm-bundle/0.1.0/
-3. P4 后段（需 NDK）：Termux 真终端、AVF 后端
-4. 换真实 MIRROR_BASE 后启用应用内底座下载
+## 下一步（待人，一起测试时）
+1. 手机装最新 APK（含设置编辑+端口转发）
+2. 测试"下载底座"（GitHub 直链；若被墙换 ghproxy 前缀）
+3. 启动 VM → 看 BootStage 状态机走到 READY → 终端 `podman run hello-world`
+4. 若手机切无线调试：adb pair 后无线继续
 
 ## 验收环境（F 盘，勿删）
 - F:\android-build-tools\gradle-8.9\ + gradle-home\（GRADLE_USER_HOME 必须指 F 盘）

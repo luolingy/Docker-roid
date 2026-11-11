@@ -44,7 +44,7 @@ fun SettingsScreen(settingsRepo: SettingsRepository, modifier: Modifier = Modifi
     val context = LocalContext.current
     val cs = rememberCoroutineScope()
     val settings by settingsRepo.current.collectAsState()
-    val bundleReady = VmBundle.isReady(context)
+    val bundleReady = VmBundle.isReady(context) && com.dockerroid.data.vm.QemuBinaries.isPresent(context)
     var exportedPath by remember { mutableStateOf<String?>(null) }
     var downloadLine by remember { mutableStateOf<String?>(null) }
     var downloading by remember { mutableStateOf(false) }
@@ -61,8 +61,8 @@ fun SettingsScreen(settingsRepo: SettingsRepository, modifier: Modifier = Modifi
             Column(Modifier.padding(16.dp)) {
                 Text("VM 底座", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    if (bundleReady) "已就绪（内核 + rootfs 齐备）"
-                    else "未就绪：需要 Image + rootfs.squashfs",
+                    if (bundleReady) "已就绪（内核 + rootfs + QEMU 齐备）"
+                    else "未就绪：需要 Image + rootfs.squashfs + qemu-system-aarch64",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (!bundleReady) {
@@ -70,7 +70,13 @@ fun SettingsScreen(settingsRepo: SettingsRepository, modifier: Modifier = Modifi
                         onClick = {
                             downloading = true
                             cs.launch {
+                                // 先下 kernel+rootfs，再下 qemu
                                 BundleDownloader(context).downloadAll(MIRROR_BASE).collect { p ->
+                                    downloadLine = if (p.error != null) "失败：${p.error}"
+                                    else "${p.file}: ${p.bytesDone / 1024} / ${p.bytesTotal / 1024} KB"
+                                    if (p.error != null) { downloading = false; return@collect }
+                                }
+                                com.dockerroid.data.vm.QemuBinaries.downloadFrom(context, MIRROR_BASE).collect { p ->
                                     downloadLine = if (p.error != null) "失败：${p.error}"
                                     else "${p.file}: ${p.bytesDone / 1024} / ${p.bytesTotal / 1024} KB"
                                     if (p.error != null || p.done) downloading = false
@@ -78,7 +84,7 @@ fun SettingsScreen(settingsRepo: SettingsRepository, modifier: Modifier = Modifi
                             }
                         },
                         enabled = !downloading,
-                    ) { Text(if (downloading) "下载中…" else "下载底座（约 70MB）") }
+                    ) { Text(if (downloading) "下载中…" else "下载底座（约 85MB）") }
                     downloadLine?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }

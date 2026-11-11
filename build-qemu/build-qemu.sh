@@ -1,44 +1,57 @@
 # ============================================================
-# build-qemu.sh — 交叉编译裁剪版 qemu-system-aarch64（均衡档 ≈ 10MB）
-# 仅保留：aarch64-softmmu + TCG + virt 机器
+# build-qemu.sh — 用 Android NDK 交叉编译 qemu-system-aarch64（bionic ABI）
+# 目标：arm64-v8a Android 可执行的 QEMU（TCG + virt + SLIRP）
+# 用法：NDK_HOME=/path/to/ndk bash build-qemu.sh
 # ============================================================
 set -euo pipefail
 
-QEMU_VER="${QEMU_VER:-9.1.0}"
+QEMU_VER="${QEMU_VER:-8.2.6}"      # 8.2 LTS 对 NDK 编译兼容性较好
+NDK_HOME="${NDK_HOME:?请设置 NDK_HOME}"
+API="${API:-26}"                    # minSdk 26
 OUT="$(pwd)/out"
 JOBS="${JOBS:-$(nproc)}"
+
+TOOLCHAIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
+CC="$TOOLCHAIN/bin/aarch64-linux-android${API}-clang"
+AR="$TOOLCHAIN/bin/llvm-ar"
+STRIP="$TOOLCHAIN/bin/llvm-strip"
+NM="$TOOLCHAIN/bin/llvm-nm"
+RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
+
+[ -x "$CC" ] || { echo "!! NDK clang 不存在: $CC"; exit 1; }
 
 mkdir -p "$OUT"
 cd "$OUT"
 if [ ! -d "qemu-${QEMU_VER}" ]; then
-  wget -q "https://download.qemu.org/qemu-${QEMU_VER}.tar.xz"
-  tar -xf "qemu-${QEMU_VER}.tar.xz"
+  echo ">> 下载 QEMU $QEMU_VER"
+  wget -q "https://download.qemu.org/qemu-${QEMU_VER}.tar.xz" -O qemu.tar.xz
+  tar -xf qemu.tar.xz
 fi
 cd "qemu-${QEMU_VER}"
 
-echo ">> configure（只保留 aarch64-softmmu，裁掉图形/音频/其他架构）"
+echo ">> configure（NDK 交叉，aarch64-softmmu + TCG + SLIRP）"
+# 16KB 页对齐（Android 13+/16KB 设备强制）
+export LDFLAGS="-Wl,-z,max-page-size=16384"
 ./configure \
   --target-list=aarch64-softmmu \
-  --cross-prefix=aarch64-linux-gnu- \
+  --cc="$CC" --cxx="${CC}++" --ar="$AR" --strip="$STRIP" --nm="$NM" --ranlib="$RANLIB" \
   --disable-werror \
   --without-default-features \
+  --enable-tcg --enable-slirp --enable-fdt=builtin \
   --disable-gtk --disable-sdl --disable-opengl --disable-virglrenderer \
   --disable-curses --disable-vnc --disable-spice \
   --disable-audio --disable-alsa --disable-pulse --disable-coreaudio \
-  --disable-docs --disable-tools --disable-guest-agent \
-  --disable-capstone --disable-slirp-smbd
+  --disable-docs --disable-tools --disable-guest-agent --disable-capstone \
+  --disable-werror --disable-plugins --disable-user \
+  --extra-cflags="-D__ANDROID__ -O2" \
+  --extra-ldflags="-Wl,-z,max-page-size=16384"
 
+echo ">> make（$(nproc) 并行）"
 make -j"$JOBS" qemu-system-aarch64
 
 echo ">> strip"
-aarch64-linux-gnu-strip qemu-system-aarch64 \
-  --strip-unneeded \
-  -R .comment -R .note
-
-# 注意：Android 13+/16KB 页设备需 16KB 对齐——需在链接时加
-#   -Wl,-z,max-page-size=16384
-# 若 strip 后仍有问题，改为在 configure 的 LDFLAGS 中加入该项重新链接。
+"$STRIP" --strip-unneeded qemu-system-aarch64 || true
 
 cp qemu-system-aarch64 "$OUT/qemu-system-aarch64"
 ls -lh "$OUT/qemu-system-aarch64"
-echo ">> 完成：把 $OUT/qemu-system-aarch64 放进 app/src/main/assets/"
+echo ">> 完成：$OUT/qemu-system-aarch64"

@@ -9,6 +9,7 @@ on:
     paths:
       - 'build-kernel/**'
       - 'build-rootfs/**'
+      - 'build-qemu/**'
       - '.github/workflows/build-bundle.yml'
   workflow_dispatch:
   release:
@@ -61,9 +62,40 @@ jobs:
           path: build-kernel/out/Image
           retention-days: 30
 
+  build-qemu:
+    name: QEMU (arm64, NDK)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Android NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: |
+          sdkmanager --install "ndk;26.3.11579264"
+          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> $GITHUB_ENV
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build pkg-config libglib2.0-dev libpixman-1-dev python3-venv
+
+      - name: Build QEMU
+        working-directory: build-qemu
+        run: bash build-qemu.sh
+
+      - name: Upload qemu artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu
+          path: build-qemu/out/qemu-system-aarch64
+          retention-days: 30
+
   release:
     name: Attach bundle to release
-    needs: [build-rootfs, build-kernel]
+    needs: [build-rootfs, build-kernel, build-qemu]
     runs-on: ubuntu-22.04
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -81,3 +113,4 @@ jobs:
           files: |
             bundle/Image
             bundle/rootfs.squashfs
+            bundle/qemu-system-aarch64
