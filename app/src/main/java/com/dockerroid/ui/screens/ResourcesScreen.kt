@@ -48,9 +48,15 @@ fun ResourcesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
     val volumes by repo.volumes.collectAsState()
     var netDialog by remember { mutableStateOf(false) }
     var volDialog by remember { mutableStateOf(false) }
+    var fwdDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
+        topBar = {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+                TextButton(onClick = { fwdDialog = true }) { Text("端口转发") }
+            }
+        },
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FloatingActionButton(onClick = { netDialog = true }) {
@@ -101,6 +107,9 @@ fun ResourcesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
             repo.createVolume(CreateVolumeRequest(Name = name))
             volDialog = false
         }
+    }
+    if (fwdDialog) {
+        PortForwardDialog(onDismiss = { fwdDialog = false })
     }
 }
 

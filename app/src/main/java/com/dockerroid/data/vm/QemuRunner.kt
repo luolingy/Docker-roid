@@ -46,7 +46,10 @@ class QemuRunner(
         scope.launch(Dispatchers.IO) {
             try {
                 val qemu = QemuBinaries.ensureExtracted(context)
-                val bundle = VmBundle.resolve(context)
+                val settings = try {
+                    com.dockerroid.data.settings.SettingsRepository(context)
+                } catch (_: Exception) { null }
+                val bundle = VmBundle.resolve(context, settings)
                 val cmd = buildCommand(qemu, bundle)
                 Log.i(TAG, "启动命令: " + cmd.joinToString(" "))
                 VmManager.onSerialLine("[host] \$ " + cmd.joinToString(" "))
@@ -106,7 +109,7 @@ class QemuRunner(
                 "-nographic",                       // 串口 = stdio（双向）
                 "-kernel", b.kernel.absolutePath,
                 "-append", "console=ttyAMA0 root=/dev/vda rw " +
-                    "docker_roid.dns=1.1.1.1,8.8.8.8 docker_roid.ram=${b.ramMb}",
+                    "docker_roid.dns=${b.dnsServers.replace(",", ",")} docker_roid.ram=${b.ramMb}",
                 "-drive", "file=${b.dataImage.absolutePath},if=virtio,format=raw",
                 "-drive", "file=${b.rootfs.absolutePath},if=virtio,format=raw,readonly=on",
                 "-netdev", "user,id=net0,hostfwd=tcp::${b.hostPort}-:8080",

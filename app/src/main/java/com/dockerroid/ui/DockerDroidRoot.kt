@@ -55,6 +55,7 @@ fun DockerDroidRoot() {
     var tab by remember { mutableStateOf(Tab.Home) }
     var detailId by remember { mutableStateOf<String?>(null) }
     val repo: EngineRepository = koinInject()
+    val settingsRepo: com.dockerroid.data.settings.SettingsRepository = koinInject()
     val snackbar = remember { SnackbarHostState() }
     val lastError by repo.lastError.collectAsState()
 
@@ -105,7 +106,7 @@ fun DockerDroidRoot() {
                 Tab.Images -> ImagesScreen(repo, m)
                 Tab.Resources -> ResourcesScreen(repo, m)
                 Tab.Terminal -> TerminalScreen(m)
-                Tab.Settings -> SettingsScreen(m)
+                Tab.Settings -> SettingsScreen(settingsRepo, m)
             }
         }
     }

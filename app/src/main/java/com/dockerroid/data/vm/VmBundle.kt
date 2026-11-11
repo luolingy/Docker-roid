@@ -1,16 +1,14 @@
 package com.dockerroid.data.vm
 
 import android.content.Context
+import com.dockerroid.data.settings.SettingsRepository
 import java.io.File
 
 /**
- * 一次 VM 启动所需的资源集合（内核、rootfs、可写盘等）。
+ * 一次 VM 启动所需的资源集合（内核、rootfs、可写盘等）+ 用户配置。
  *
- * 解析顺序：
- *  1. 按需下载目录 filesDir/vm-bundle/<version>/
- *  2. 内置 assets（如果某版本选择内置）
- *
- * 均衡档默认走"按需下载"，APK 本体不带大文件；P1 阶段可先用开发机手工放置文件。
+ * 解析顺序：按需下载目录 filesDir/vm-bundle/<version>/
+ * 可写盘大小与 guest RAM 来自用户设置（DataStore），默认 512MB / 1024MB。
  */
 data class VmBundle(
     val kernel: File,
@@ -18,6 +16,7 @@ data class VmBundle(
     val dataImage: File,     // ext4 可写（每次启动前若无则创建空文件）
     val ramMb: Int,
     val hostPort: Int,       // host->guest 默认转发端口
+    val dnsServers: String,
 ) {
     val qmpSocket: File get() = dataImage.parentFile!!.resolve("qmp.sock")
     val hostdSocket: File get() = dataImage.parentFile!!.resolve("hostd.sock")
@@ -25,10 +24,16 @@ data class VmBundle(
     companion object {
         const val BUNDLE_VERSION = "0.1.0"
         private const val DEFAULT_RAM_MB = 1024
-        private const val DEFAULT_HOST_PORT = 8080
-        private const val DATA_IMAGE_SIZE_MB = 512   // 512MB 起步（可调；原 2GB 对低存储设备过大）
+        private const val DEFAULT_DISK_MB = 512
+        private const val DEFAULT_HOST_PORT = 2375
 
-        fun resolve(context: Context): VmBundle {
+        fun resolve(context: Context, settings: SettingsRepository? = null): VmBundle {
+            val s = settings?.current?.value
+            val ramMb = s?.ramMb ?: DEFAULT_RAM_MB
+            val diskMb = s?.diskMb ?: DEFAULT_DISK_MB
+            val port = s?.enginePort ?: DEFAULT_HOST_PORT
+            val dns = s?.dnsServers ?: "1.1.1.1,8.8.8.8"
+
             val dir = context.filesDir.resolve("vm-bundle").resolve(BUNDLE_VERSION)
             if (!dir.exists()) dir.mkdirs()
 
@@ -36,18 +41,20 @@ data class VmBundle(
             val rootfs = dir.resolve("rootfs.squashfs")
             val dataImage = dir.resolve("data.ext4")
 
-            // 首次启动：若可写盘不存在则创建一个稀疏文件（ext4 由 guest 内首次开机 mkfs，
-            // 或在下载底座时一并提供已格式化的空盘）。这里仅确保文件存在并预分配大小。
+            // 可写盘：不存在则创建稀疏文件；已存在但比目标小则扩容（ext4 在 guest 内自动识别）
             if (!dataImage.exists()) {
-                java.io.RandomAccessFile(dataImage, "rw").use { it.setLength(DATA_IMAGE_SIZE_MB * 1024L * 1024L) }
+                java.io.RandomAccessFile(dataImage, "rw").use { it.setLength(diskMb * 1024L * 1024L) }
+            } else if (dataImage.length() < diskMb * 1024L * 1024L) {
+                java.io.RandomAccessFile(dataImage, "rw").use { it.setLength(diskMb * 1024L * 1024L) }
             }
 
             return VmBundle(
                 kernel = kernel,
                 rootfs = rootfs,
                 dataImage = dataImage,
-                ramMb = DEFAULT_RAM_MB,
-                hostPort = DEFAULT_HOST_PORT,
+                ramMb = ramMb,
+                hostPort = port,
+                dnsServers = dns,
             )
         }
 
