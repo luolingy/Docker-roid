@@ -27,6 +27,20 @@ start() {
     mkdir -p /sys/fs/cgroup
     mount -t cgroup2 none /sys/fs/cgroup 2>/dev/null || true
 
+    # binfmt_misc：支持 amd64 (x86_64) 镜像通过 qemu-x86_64 透明执行
+    mkdir -p /proc/sys/fs/binfmt_misc
+    mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
+    BINFMT=/proc/sys/fs/binfmt_misc
+    if [ -d "$BINFMT" ]; then
+        QX86=""
+        for c in /usr/bin/qemu-x86_64-static /usr/bin/qemu-x86_64; do [ -x "$c" ] && QX86="$c" && break; done
+        if [ -n "$QX86" ] && [ ! -e "$BINFMT/qemu-x86_64" ]; then
+            # x86_64 ELF (e_machine=0x3e=62) → qemu-x86_64
+            printf ':qemu-x86_64:M::\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xfe\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:%s:F\n' "$QX86" > "$BINFMT/register" 2>/dev/null || true
+        fi
+        [ -e "$BINFMT/qemu-x86_64" ] && MARK "binfmt amd64 ready" || MARK "binfmt skip"
+    fi
+
     # squashfs 只读根：整体把 /var 挂 tmpfs（podman 需要大量可写路径）
     mkdir -p /var
     grep -q ' /var ' /proc/mounts || mount -t tmpfs -o size=1536m tmpfs /var 2>/dev/null || true

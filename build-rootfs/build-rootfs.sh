@@ -57,7 +57,8 @@ sudo chroot "$ROOT" /bin/sh -c '
   apk update
   # 容器运行所需 + openrc 初始化系统
   apk add --no-cache podman crun iptables ip6tables fuse-overlayfs slirp4netns \
-      ca-certificates tzdata nftables podman-compose python3 openrc
+      ca-certificates tzdata nftables podman-compose python3 openrc \
+      qemu-x86_64 qemu-aarch64
   # 精简：删文档/缓存
   rm -rf /var/cache/apk/* /usr/share/man/* /usr/share/doc/*
 ' || { echo "!! chroot apk 安装失败"; sudo umount "$ROOT/proc" 2>/dev/null || true; exit 1; }
