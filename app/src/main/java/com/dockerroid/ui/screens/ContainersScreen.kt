@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -118,26 +119,30 @@ private fun ContainerCard(c: ContainerSummary, repo: EngineRepository, onClick: 
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(10.dp)
-                        .background(stateColor(c.State), CircleShape)
-                )
+                Box(Modifier.size(10.dp).background(stateColor(c.State), CircleShape))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     c.Names.firstOrNull()?.removePrefix("/") ?: c.Id.take(12),
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                Spacer(Modifier.width(6.dp))
+                // 状态胶囊
+                Box(
+                    Modifier.background(stateColor(c.State).copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(c.State, style = MaterialTheme.typography.labelSmall, color = stateColor(c.State))
+                }
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = { repo.startContainer(c.Id) }, enabled = c.State != "running") {
+                IconButton(onClick = { repo.startContainer(c.Id) }, enabled = c.State != "running", modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Filled.PlayArrow, "启动")
                 }
-                IconButton(
-                    onClick = { repo.stopContainer(c.Id) },
-                    enabled = c.State == "running" || c.State == "paused",
-                ) { Icon(Icons.Filled.Stop, "停止") }
-                IconButton(onClick = { repo.removeContainer(c.Id, force = false) }) {
+                IconButton(onClick = { repo.stopContainer(c.Id) }, enabled = c.State == "running" || c.State == "paused", modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Filled.Stop, "停止")
+                }
+                IconButton(onClick = { repo.removeContainer(c.Id, force = false) }, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Filled.Delete, "删除")
                 }
             }
@@ -146,9 +151,22 @@ private fun ContainerCard(c: ContainerSummary, repo: EngineRepository, onClick: 
                 c.Image,
                 fontFamily = FontFamily.Monospace,
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            Text(c.Status, style = MaterialTheme.typography.bodySmall)
+            // 端口映射
+            val ports = c.Ports.filter { it.PublicPort != null }
+            if (ports.isNotEmpty()) {
+                Text(
+                    ports.joinToString("  ") { "${it.PublicPort}→${it.PrivatePort}/${it.Type}" },
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                Text(c.Status, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

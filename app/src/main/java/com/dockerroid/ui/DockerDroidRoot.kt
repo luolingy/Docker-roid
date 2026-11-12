@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
@@ -43,14 +45,15 @@ import org.koin.compose.koinInject
 
 private enum class Tab(val labelRes: Int, val icon: ImageVector) {
     Home(R.string.nav_home, Icons.Filled.Home),
-    Containers(R.string.nav_containers, Icons.Filled.ViewInAr),
-    Images(R.string.nav_images, Icons.Filled.Layers),
+    Containers(R.string.nav_containers, Icons.Filled.Dns),
+    Images(R.string.nav_images, Icons.Filled.Inventory2),
     Resources(R.string.nav_resources, Icons.Filled.Storage),
     Terminal(R.string.nav_terminal, Icons.Filled.Terminal),
     Settings(R.string.nav_settings, Icons.Filled.Settings),
 }
 
 @Composable
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 fun DockerDroidRoot() {
     var tab by remember { mutableStateOf(Tab.Home) }
     var detailId by remember { mutableStateOf<String?>(null) }
@@ -89,16 +92,24 @@ fun DockerDroidRoot() {
         val d = detailId
         when {
             d != null -> {
-                // 系统返回键返回列表
                 androidx.activity.compose.BackHandler { detailId = null }
                 Column(Modifier.padding(inner)) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-                        IconButton(onClick = { detailId = null }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
-                        }
-                    }
-                    val st = repo.containers.collectAsState().value.items.firstOrNull { it.Id == d }?.State
-                    com.dockerroid.ui.screens.ContainerDetailScreen(repo, d, runningState = st)
+                    // 顶部标题条：返回 + 容器名
+                    val item = repo.containers.collectAsState().value.items.firstOrNull { it.Id == d }
+                    androidx.compose.material3.TopAppBar(
+                        title = {
+                            androidx.compose.material3.Text(
+                                item?.Names?.firstOrNull()?.removePrefix("/") ?: "容器详情",
+                                maxLines = 1,
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { detailId = null }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                            }
+                        },
+                    )
+                    com.dockerroid.ui.screens.ContainerDetailScreen(repo, d, runningState = item?.State)
                 }
             }
             else -> when (tab) {
