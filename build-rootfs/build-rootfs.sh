@@ -55,17 +55,29 @@ sudo mount --bind /proc "$ROOT/proc" 2>/dev/null || true
 sudo chroot "$ROOT" /bin/sh -c '
   set -e
   apk update
-  # 只装容器所需：podman + crun + 网络工具
+  # 容器运行所需 + openrc 初始化系统
   apk add --no-cache podman crun iptables ip6tables fuse-overlayfs slirp4netns \
-      ca-certificates tzdata nftables podman-compose python3
+      ca-certificates tzdata nftables podman-compose python3 openrc
   # 精简：删文档/缓存
   rm -rf /var/cache/apk/* /usr/share/man/* /usr/share/doc/*
 ' || { echo "!! chroot apk 安装失败"; sudo umount "$ROOT/proc" 2>/dev/null || true; exit 1; }
 sudo umount "$ROOT/proc" 2>/dev/null || true
 rm -f "$ROOT/usr/bin/qemu-aarch64-static" "$ROOT/etc/resolv.conf"
 
-echo ">> 安装 docker-roid 启动脚本与服务（见 build-rootfs/guest/）"
-cp -r guest/etc "$ROOT/" 2>/dev/null || echo "   (guest 脚本未放置，跳过)"
+echo ">> 安装 docker-roid 启动服务（OpenRC）"
+# 把 guest 脚本装为 OpenRC 服务 + 相关运行脚本
+mkdir -p "$ROOT/etc/init.d" "$ROOT/etc/runlevels/default" "$ROOT/usr/local/bin"
+cp build-rootfs/guest/etc/init.d/docker-roid-boot "$ROOT/etc/init.d/docker-roid" 2>/dev/null || \
+  cp guest/etc/init.d/docker-roid-boot "$ROOT/etc/init.d/docker-roid" 2>/dev/null || true
+if [ -f "$ROOT/etc/init.d/docker-roid" ]; then
+  chmod +x "$ROOT/etc/init.d/docker-roid"
+  # 注册到 default 运行级
+  ln -sf /etc/init.d/docker-roid "$ROOT/etc/runlevels/default/docker-roid" 2>/dev/null || true
+fi
+# 确保必要运行级 softlink（OpenRC 首次 boot）
+for svc in boot sysinit default; do mkdir -p "$ROOT/etc/runlevels/$svc"; done
+# 用户态 shell/核心服务
+ln -sf /etc/init.d/hostname "$ROOT/etc/runlevels/boot/hostname" 2>/dev/null || true
 
 echo ">> 生成 squashfs (xz)"
 mksquashfs "$ROOT" "$ROOTFS_IMG" -comp xz -noappend -b 256K

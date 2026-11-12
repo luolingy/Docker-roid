@@ -92,3 +92,18 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 - ✅ execCapture API（容器内一次性命令）
 - 全部编译通过 + 单测绿
 - ⏳ 仍待真机：完整 VM boot 到 READY（rom 已打包，待测）
+
+## 功能完整度总览（2026-11-12）
+34 个 Kotlin 文件，11 个屏幕，APK 42.3MB，编译+单测全绿，8 次功能提交已推送
+- 容器：列表/启停/重启/暂停/重命名/删除/提交/日志流/stats/详情/创建/日志导出/命令执行(execCapture)
+- 镜像：列表/拉取(进度)/删除/Dockerfile构建
+- 网络·卷：列表/创建/删除
+- 端口转发：规则持久化管理
+- Compose：YAML 编辑/保存/导出/复制命令
+- 设置：内存/盘/DNS/自启 + 底座下载 + 诊断
+- 终端：串口双向
+- Home：系统信息 + 磁盘占用条形图 + prune
+## 剩余待真机验证（非代码问题）
+1. 完整 VM boot 到 READY（rom 已打包，QEMU 已跑通 --version）
+2. 引擎连接后各容器/镜像功能实测
+3. PODMAN system service 2375 端口可达性

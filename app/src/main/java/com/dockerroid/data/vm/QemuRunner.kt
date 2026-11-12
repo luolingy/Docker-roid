@@ -109,6 +109,11 @@ class QemuRunner(
 
     private fun buildCommand(qemu: File, b: VmBundle): List<String> = buildList {
         add(qemu.absolutePath)
+        // QEMU 用 -L 指定 rom/bios 目录（打包在 filesDir/qemu/share/qemu）
+        val romDir = QemuBinaries.rootDir(context).resolve("share/qemu")
+        if (romDir.exists()) {
+            addAll(listOf("-L", romDir.absolutePath))
+        }
         addAll(
             listOf(
                 "-machine", "virt",
@@ -117,8 +122,8 @@ class QemuRunner(
                 "-m", "${b.ramMb}",
                 "-nographic",                       // 串口 = stdio（双向）
                 "-kernel", b.kernel.absolutePath,
-                "-append", "console=ttyAMA0 root=/dev/vda rw " +
-                    "docker_roid.dns=${b.dnsServers.replace(",", ",")} docker_roid.ram=${b.ramMb}",
+                "-append", "console=ttyAMA0 root=/dev/vdb rootfstype=squashfs ro " +
+                    "docker_roid.dns=${b.dnsServers} docker_roid.ram=${b.ramMb}",
                 "-drive", "file=${b.dataImage.absolutePath},if=virtio,format=raw",
                 "-drive", "file=${b.rootfs.absolutePath},if=virtio,format=raw,readonly=on",
                 "-netdev", "user,id=net0,hostfwd=tcp::${b.hostPort}-:8080",

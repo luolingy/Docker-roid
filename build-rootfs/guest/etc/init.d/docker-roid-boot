@@ -1,51 +1,60 @@
-#!/bin/sh
-# guest 侧引导脚本：挂载 overlay、打印启动阶段标记，供 App 串口日志解析。
-# 由 initramfs 在 switch_root 前/后调用，或作为 OpenRC 服务。
-#
-# 标记必须与 Android 侧 BootStage 枚举严格一致。
+#!/sbin/openrc-run
+# docker-roid 启动服务（OpenRC）
+# 挂载虚拟文件系统、cgroup、ZRAM、网络、启动 Podman system service，
+# 并打印启动阶段标记供 Android 侧串口状态机解析。
+
+description="Docker-roid VM bootstrap"
 
 MARK() { echo "docker-roid: $1"; }
 
-MARK "kernel up"
+depend() {
+    need localmount
+    after bootmisc
+}
 
-# -- 挂载必要虚拟文件系统 --
-mount -t proc proc /proc 2>/dev/null || true
-mount -t sysfs sysfs /sys 2>/dev/null || true
-mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
-mkdir -p /dev/pts /dev/shm /dev/mqueue
-mount -t devpts devpts /dev/pts 2>/dev/null || true
-mount -t tmpfs tmpfs /dev/shm 2>/dev/null || true
-mount -t mqueue mqueue /dev/mqueue 2>/dev/null || true
+start() {
+    MARK "kernel up"
 
-# -- cgroup v2 --
-mount -t cgroup2 none /sys/fs/cgroup 2>/dev/null || true
+    # 虚拟文件系统
+    mount -t proc proc /proc 2>/dev/null || true
+    mount -t sysfs sysfs /sys 2>/dev/null || true
+    mkdir -p /dev/pts /dev/shm /dev/mqueue
+    mount -t devpts devpts /dev/pts 2>/dev/null || true
+    mount -t tmpfs tmpfs /dev/shm 2>/dev/null || true
+    mount -t mqueue mqueue /dev/mqueue 2>/dev/null || true
 
-# -- ZRAM swap --
-if [ -e /dev/zram0 ]; then
-  echo 536870912 > /sys/block/zram0/disksize 2>/dev/null && \
-    mkswap /dev/zram0 >/dev/null 2>&1 && \
-    swapon /dev/zram0 2>/dev/null || true
-fi
+    # cgroup v2
+    mkdir -p /sys/fs/cgroup
+    mount -t cgroup2 none /sys/fs/cgroup 2>/dev/null || true
 
-# -- 网络（SLIRP 默认地址）--
-MARK "bootstrap done"
-ip link set eth0 up 2>/dev/null || true
-ip addr add 10.0.2.15/24 dev eth0 2>/dev/null || true
-ip route add default via 10.0.2.2 2>/dev/null || true
-# DNS：优先内核 cmdline 的 docker_roid.dns=，其次兜底
-DNS="$(sed -n 's/.*docker_roid.dns=\([^ ]*\).*/\1/p' /proc/cmdline)"
-echo "${DNS:-1.1.1.1,8.8.8.8}" | tr ',' '\n' > /etc/resolv.conf
-MARK "network up"
+    # ZRAM swap
+    if [ -e /dev/zram0 ]; then
+        echo 536870912 > /sys/block/zram0/disksize 2>/dev/null && \
+        mkswap /dev/zram0 >/dev/null 2>&1 && swapon /dev/zram0 2>/dev/null || true
+    fi
 
-# -- 容器引擎 --
-MARK "engine starting"
-# Podman system service 暴露 Docker 兼容 socket 到 TCP 2375（经 net0）
-# 用 podman system service 的后台模式
-(podman system service --time=0 tcp://0.0.0.0:2375 >/var/log/podman.log 2>&1 &) || true
-# 等待 socket 就绪
-for i in $(seq 1 30); do
-  if (echo > /dev/tcp/127.0.0.1/2375) 2>/dev/null; then break; fi
-  sleep 0.5
-done
+    MARK "bootstrap done"
 
-MARK "READY"
+    # 网络（SLIRP 固定地址）
+    ip link set eth0 up 2>/dev/null || true
+    ip addr add 10.0.2.15/24 dev eth0 2>/dev/null || true
+    ip route add default via 10.0.2.2 2>/dev/null || true
+    DNS="$(sed -n 's/.*docker_roid.dns=\([^ ]*\).*/\1/p' /proc/cmdline)"
+    echo "${DNS:-1.1.1.1,8.8.8.8}" | tr ',' '\n' > /etc/resolv.conf
+    MARK "network up"
+
+    # 容器引擎：Podman system service 暴露 Docker 兼容 API 到 TCP 2375
+    MARK "engine starting"
+    (podman system service --time=0 tcp://0.0.0.0:2375 >/var/log/podman.log 2>&1 &) || true
+    i=0
+    while [ $i -lt 30 ]; do
+        if (echo > /dev/tcp/127.0.0.1/2375) 2>/dev/null; then break; fi
+        sleep 0.5; i=$((i+1))
+    done
+
+    MARK "READY"
+}
+
+stop() {
+    : # 无需清理
+}
