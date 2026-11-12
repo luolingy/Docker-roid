@@ -122,9 +122,8 @@ class QemuRunner(
                 "-m", "${b.ramMb}",
                 "-nographic",                       // 串口 = stdio（双向）
                 "-kernel", b.kernel.absolutePath,
-                "-append", "console=ttyAMA0 root=/dev/vdb rootfstype=squashfs ro " +
-                    "docklet.dns=${b.dnsServers} docklet.ram=${b.ramMb}",
-                "-drive", "file=${b.dataImage.absolutePath},if=virtio,format=raw",
+                "-append", "console=ttyAMA0 root=/dev/vda rootfstype=squashfs ro " +
+                    "init=/usr/local/bin/startvm docklet.dns=${b.dnsServers} docklet.ram=${b.ramMb}",
                 "-drive", "file=${b.rootfs.absolutePath},if=virtio,format=raw,readonly=on",
                 "-netdev", "user,id=net0,hostfwd=tcp::${b.hostPort}-:2375,dns=${b.dnsServers.substringBefore(",")}",
                 "-device", "virtio-net-pci,netdev=net0",

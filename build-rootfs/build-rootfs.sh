@@ -59,6 +59,16 @@ sudo chroot "$ROOT" /bin/sh -c '
   apk add --no-cache podman crun iptables ip6tables fuse-overlayfs slirp4netns \
       ca-certificates tzdata nftables podman-compose python3 openrc \
       qemu-x86_64 qemu-aarch64
+  # 建立 OpenRC 最小基础服务集（否则 openrc 卡在缓存依赖）
+  rc-update add devfs sysinit 2>/dev/null || true
+  rc-update add dmesg sysinit 2>/dev/null || true
+  rc-update add mdev sysinit 2>/dev/null || true
+  rc-update add modules boot 2>/dev/null || true
+  rc-update add sysctl boot 2>/dev/null || true
+  rc-update add hostname boot 2>/dev/null || true
+  rc-update add bootmisc boot 2>/dev/null || true
+  rc-update add killprocs shutdown 2>/dev/null || true
+  rc-update add savecache shutdown 2>/dev/null || true
   # 精简：删文档/缓存
   rm -rf /var/cache/apk/* /usr/share/man/* /usr/share/doc/*
 ' || { echo "!! chroot apk 安装失败"; sudo umount "$ROOT/proc" 2>/dev/null || true; exit 1; }
@@ -75,6 +85,10 @@ if [ -f "$ROOT/etc/init.d/docklet" ]; then
   # 注册到 default 运行级
   ln -sf /etc/init.d/docklet "$ROOT/etc/runlevels/default/docklet" 2>/dev/null || true
 fi
+# 独立 init 脚本（内核 init=/usr/local/bin/startvm 直接用，绕过 OpenRC）
+cp build-rootfs/guest/usr/local/bin/startvm "$ROOT/usr/local/bin/startvm" 2>/dev/null || \
+  cp guest/usr/local/bin/startvm "$ROOT/usr/local/bin/startvm" 2>/dev/null || true
+chmod +x "$ROOT/usr/local/bin/startvm" 2>/dev/null || true
 # 确保必要运行级 softlink（OpenRC 首次 boot）
 for svc in boot sysinit default; do mkdir -p "$ROOT/etc/runlevels/$svc"; done
 # 用户态 shell/核心服务

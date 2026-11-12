@@ -1,0 +1,82 @@
+#!/bin/sh
+# Docklet 独立启动脚本（作为内核 init= 直接用，不依赖 OpenRC）
+# 挂载虚拟文件系统、cgroup、可写 tmpfs、binfmt、网络，启动 Podman 服务，
+# 打印启动阶段标记（Docklet: xxx）供 Android 串口状态机解析，最后 exec shell。
+
+MARK() { echo "Docklet: $1"; }
+
+MARK "kernel up"
+
+mount -t proc proc /proc 2>/dev/null
+mount -t sysfs sysfs /sys 2>/dev/null
+mount -t devtmpfs devtmpfs /dev 2>/dev/null
+mkdir -p /dev/pts /dev/shm /dev/mqueue
+mount -t devpts devpts /dev/pts 2>/dev/null
+mount -t tmpfs tmpfs /dev/shm 2>/dev/null
+mount -t mqueue mqueue /dev/mqueue 2>/dev/null
+
+mkdir -p /sys/fs/cgroup
+mount -t cgroup2 none /sys/fs/cgroup 2>/dev/null
+
+# binfmt_misc（amd64 镜像支持）
+mkdir -p /proc/sys/fs/binfmt_misc 2>/dev/null
+mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null
+BINFMT=/proc/sys/fs/binfmt_misc
+if [ -d "$BINFMT" ]; then
+    QX86=""
+    for c in /usr/bin/qemu-x86_64-static /usr/bin/qemu-x86_64; do [ -x "$c" ] && QX86="$c" && break; done
+    if [ -n "$QX86" ] && [ ! -e "$BINFMT/qemu-x86_64" ]; then
+        printf ':qemu-x86_64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xfe\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:%s:F\n' "$QX86" > "$BINFMT/register" 2>/dev/null
+    fi
+    [ -e "$BINFMT/qemu-x86_64" ] && MARK "binfmt amd64 ready"
+fi
+
+# 可写层：squashfs 只读根，把需要写的路径全挂 tmpfs
+mkdir -p /var
+mount -t tmpfs -o size=1536m tmpfs /var 2>/dev/null
+for d in /var/log /var/lib/containers /var/cache/containers /var/run /var/tmp /tmp /etc/containers /run/containers /run; do
+    mkdir -p "$d"
+    mount -t tmpfs -o size=1g tmpfs "$d" 2>/dev/null
+done
+mkdir -p /etc/containers/networks /etc/containers/registries.d
+printf 'unqualified-search-registries = ["docker.io"]\n' > /etc/containers/registries.conf 2>/dev/null
+printf '{"default":[{"type":"insecureAcceptAnything"}]}\n' > /etc/containers/policy.json 2>/dev/null
+printf '[network]\ndefault_network = "podman"\n' > /etc/containers/containers.conf 2>/dev/null
+mkdir -p /var/lib/containers/storage /var/run/libpod
+
+# DNS（/etc/resolv.conf 是软链 → /run/docklet/resolv.conf）
+mkdir -p /run/docklet
+DNS="$(sed -n 's/.*docklet.dns=\([^ ]*\).*/\1/p' /proc/cmdline)"
+DNS="${DNS:-1.1.1.1,8.8.8.8}"
+: > /run/docklet/resolv.conf
+echo "$DNS" | tr ',' '\n' >> /run/docklet/resolv.conf
+cp -f /run/docklet/resolv.conf /etc/resolv.conf 2>/dev/null
+
+# ZRAM swap
+if [ -e /dev/zram0 ]; then
+    echo 536870912 > /sys/block/zram0/disksize 2>/dev/null && \
+    mkswap /dev/zram0 >/dev/null 2>&1 && swapon /dev/zram0 2>/dev/null
+fi
+
+MARK "bootstrap done"
+
+# 网络（SLIRP 固定地址）
+ip link set eth0 up 2>/dev/null
+ip addr add 10.0.2.15/24 dev eth0 2>/dev/null
+ip route add default via 10.0.2.2 2>/dev/null
+MARK "network up"
+
+# 容器引擎
+MARK "engine starting"
+export HOME=/root
+podman system service --time=0 tcp://0.0.0.0:2375 >/var/log/podman.log 2>&1 &
+i=0
+while [ $i -lt 40 ]; do
+    (echo > /dev/tcp/127.0.0.1/2375) 2>/dev/null && break
+    sleep 0.5; i=$((i+1))
+done
+
+MARK "READY"
+
+# 保持一个 shell 在串口前台（供 App 终端输入）
+exec /bin/sh
