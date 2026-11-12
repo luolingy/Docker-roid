@@ -89,18 +89,26 @@ fun ImagesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
 private fun ImageCard(img: ImageSummary, repo: EngineRepository) {
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                val tag = img.RepoTags.firstOrNull()
                 Text(
-                    img.RepoTags.firstOrNull() ?: img.Id.take(19),
+                    tag ?: "<none>:<none>",
                     fontFamily = FontFamily.Monospace,
                     style = MaterialTheme.typography.titleSmall,
+                    color = if (tag != null) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
-                Text(formatSize(img.Size), style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(formatSize(img.Size), style = MaterialTheme.typography.labelSmall)
+                    Text("sha256:${img.Id.removePrefix("sha256:").take(12)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             IconButton(onClick = {
-                val tag = img.RepoTags.firstOrNull() ?: return@IconButton
-                repo.removeImage(tag)
+                val t = img.RepoTags.firstOrNull() ?: return@IconButton
+                repo.removeImage(t)
             }) { Icon(Icons.Filled.Delete, "删除") }
         }
     }

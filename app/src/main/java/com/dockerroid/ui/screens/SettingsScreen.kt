@@ -3,8 +3,10 @@ package com.dockerroid.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -92,6 +94,10 @@ fun SettingsScreen(settingsRepo: SettingsRepository, modifier: Modifier = Modifi
                         },
                         enabled = !downloading,
                     ) { Text(if (downloading) "下载中…" else "下载底座（约 85MB）") }
+                    if (downloading) {
+                        Spacer(Modifier.height(6.dp))
+                        androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
                     downloadLine?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
