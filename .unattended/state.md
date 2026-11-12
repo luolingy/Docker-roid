@@ -119,3 +119,12 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 ## 关键进展：真机 VM boot 已跑通到 engine starting（见上文）
 - rootfs 需开放 openrc + 可写目录挂 tmpfs（已改 build-rootfs.sh，GHA 重建中）
 - 单 drive 时 rootfs= /dev/vda
+
+## 2026-11-13 重大更新
+- ✅ 项目改名 Docklet（包名 com.midsancode.docklet，应用名 Docklet），编译通过
+- ✅ 真机验证成功：VM boot READY + Podman 运行容器 + Docker API HTTP 200
+- ✅ amd64 支持：rootfs 装 qemu-x86_64 9.0.2 + binfmt_misc 注册逻辑
+- ✅ nftables：内核 config 补全 NF_TABLES/NFT_NAT/MASQUERADE 等
+- ✅ 内核 config 加 CONFIG_BINFMT_MISC
+- ⏳ GHA 重建 v0.4.0（内核对 nftables+binfmt，rootfs 含 amd64）
+- 待验：新内核 boot + amd64 容器运行 + bridge 网络

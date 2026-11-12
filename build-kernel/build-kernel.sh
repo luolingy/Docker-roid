@@ -79,6 +79,17 @@ if [ "$MISSING" -gt 0 ]; then
     --enable OVERLAY_FS --enable SQUASHFS --enable SQUASHFS_XZ \
     --enable USER_NS --enable MEMCG --enable ZRAM \
     --enable VIRTIO_CONSOLE --enable TUN --enable VETH \
+    --enable BINFMT_MISC --enable BINFMT_ELF \
+    --enable NETFILTER --enable NETFILTER_ADVANCED \
+    --enable NF_TABLES --enable NF_TABLES_INET --enable NF_TABLES_NETDEV \
+    --enable NFT_NAT --enable NFT_MASQ --enable NFT_COMPAT \
+    --enable NF_NAT --enable NF_CONNTRACK \
+    --enable NETFILTER_XTABLES --enable NETFILTER_XT_TARGET_MASQUERADE \
+    --enable NETFILTER_XT_MATCH_CONNTRACK --enable NETFILTER_XT_MATCH_ADDRTYPE \
+    --enable IP_NF_IPTABLES --enable IP_NF_FILTER --enable IP_NF_NAT \
+    --enable IP_NF_TARGET_MASQUERADE --enable IP_NF_MANGLE \
+    --enable IP6_NF_IPTABLES --enable BRIDGE --enable BRIDGE_NETFILTER \
+    --enable NET_SCHED --enable NET_CLS_ACT --enable NET_ACT_MIRRED --enable DUMMY \
     --disable DEBUG_INFO --disable KALLSYMS --disable FTRACE \
     --disable DRM --disable SOUND --disable SND \
     --disable WLAN --disable WIRELESS --disable BLUETOOTH \
@@ -100,6 +111,11 @@ CONFIG_VIRTIO_NET
 CONFIG_VETH
 CONFIG_TUN
 CONFIG_NETFILTER
+CONFIG_NF_TABLES
+CONFIG_NF_TABLES_INET
+CONFIG_NFT_NAT
+CONFIG_NETFILTER_XT_TARGET_MASQUERADE
+CONFIG_BINFMT_MISC
 CONFIG_MEMCG
 CONFIG_USER_NS
 EOF
