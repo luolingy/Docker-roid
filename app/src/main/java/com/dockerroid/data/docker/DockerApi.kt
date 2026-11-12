@@ -148,6 +148,38 @@ class DockerApi(
     fun inspectContainer(id: String): com.dockerroid.data.docker.model.ContainerInspect =
         execute(get("/containers/$id/json"))
 
+    /**
+     * 在已有容器里直接 exec 一条命令（一次性，非交互），返回合并输出。
+     * 主要用于 compose 之外的单命令调试。
+     */
+    fun execCapture(containerId: String, cmd: List<String>): String {
+        val cmdJson = cmd.joinToString(",", "[", "]") { "\"" + it.replace("\\", "\\\\").replace("\"", "\\\"") + "\"" }
+        val body = """{"AttachStdout":true,"AttachStderr":true,"Tty":false,"Cmd":$cmdJson}"""
+        val created = executeNoBody(post("/containers/$containerId/exec", body))
+        val eText = created.body?.string().orEmpty(); created.close()
+        val eid = runCatching { json.parseToJsonElement(eText).jsonObject["Id"]?.jsonPrimitive?.content }.getOrNull()
+            ?: return "exec 创建失败: $eText"
+        val startResp = client.newCall(
+            post("/exec/$eid/start", """{"Detach":false,"Tty":false}""")
+        ).execute()
+        val sb = StringBuilder()
+        startResp.body?.byteStream()?.let { input ->
+            val header = ByteArray(8)
+            while (true) {
+                var read = 0
+                while (read < 8) { val n = input.read(header, read, 8 - read); if (n < 0) return@let; read += n }
+                val size = ((header[4].toInt() and 0xFF) shl 24) or ((header[5].toInt() and 0xFF) shl 16) or
+                    ((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)
+                if (size <= 0) continue
+                val payload = ByteArray(size); read = 0
+                while (read < size) { val n = input.read(payload, read, size - read); if (n < 0) return@let; read += n }
+                sb.append(String(payload, Charsets.UTF_8))
+            }
+        }
+        startResp.close()
+        return sb.toString()
+    }
+
     fun renameContainer(id: String, newName: String) {
         val body = """{"name":"$newName"}"""
         executeNoBody(post("/containers/$id/rename", body)).close()

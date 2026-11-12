@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -49,12 +50,15 @@ fun ResourcesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
     var netDialog by remember { mutableStateOf(false) }
     var volDialog by remember { mutableStateOf(false) }
     var fwdDialog by remember { mutableStateOf(false) }
+    var composeDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         topBar = {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { fwdDialog = true }) { Text("端口转发") }
+                TextButton(onClick = { composeDialog = true }) { Text("Compose") }
             }
         },
         floatingActionButton = {
@@ -110,6 +114,14 @@ fun ResourcesScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
     }
     if (fwdDialog) {
         PortForwardDialog(onDismiss = { fwdDialog = false })
+    }
+    if (composeDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { composeDialog = false },
+            confirmButton = { TextButton(onClick = { composeDialog = false }) { Text("关闭") } },
+            title = { Text("Compose") },
+            text = { androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(500.dp)) { ComposeScreen() } },
+        )
     }
 }
 
