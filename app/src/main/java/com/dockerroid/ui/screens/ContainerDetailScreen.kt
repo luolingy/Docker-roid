@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -54,7 +55,7 @@ fun ContainerDetailScreen(
     runningState: String? = null,
 ) {
     var tab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("日志", "资源", "详情")
+    val tabs = listOf("日志", "资源", "详情", "命令")
     var renameOpen by remember { mutableStateOf(false) }
     var commitOpen by remember { mutableStateOf(false) }
     val isRunning = runningState == "running"
@@ -82,6 +83,7 @@ fun ContainerDetailScreen(
             0 -> LogsPane(repo, containerId, Modifier.weight(1f))
             1 -> StatsPane(repo, containerId, Modifier.weight(1f))
             2 -> InspectPane(repo, containerId, Modifier.weight(1f))
+            3 -> CommandPane(repo, containerId, Modifier.weight(1f))
         }
     }
 
@@ -100,8 +102,43 @@ fun ContainerDetailScreen(
 }
 
 @Composable
-private fun SimpleInputDialog(title: String, label: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var v by remember { mutableStateOf("") }
+private fun CommandPane(repo: EngineRepository, id: String, modifier: Modifier = Modifier) {
+    var cmd by remember { mutableStateOf("") }
+    var out by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Column(modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                cmd, { cmd = it },
+                label = { Text("在容器内执行（如 ls / 或 sh -c 'echo hi'）") },
+                singleLine = true, modifier = Modifier.weight(1f),
+            )
+            TextButton(enabled = cmd.isNotBlank() && !busy, onClick = {
+                busy = true
+                scope.launch {
+                    // 简单空格分词；引号场景建议用 sh -c
+                    val parts = cmd.split(" ").filter { it.isNotBlank() }
+                    out = repo.execCommand(id, parts)
+                    busy = false
+                }
+            }) { Text(if (busy) "…" else "执行") }
+        }
+        Text(
+            out.ifEmpty { "（输出将显示在这里）" },
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .verticalScroll(rememberScrollState())
+                .padding(8.dp),
+        )
+    }
+}
+
+@Composable
+private fun SimpleInputDialog(title: String, label: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {    var v by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },

@@ -210,6 +210,12 @@ class EngineRepository(
 
     // ---- 详情相关（供 ContainerDetailScreen） ----
 
+    /** 在容器内执行一条命令并返回输出（一次性，非交互）。 */
+    suspend fun execCommand(id: String, cmd: List<String>): String =
+        kotlinx.coroutines.withContext(Dispatchers.IO) {
+            runCatching { api.execCapture(id, cmd) }.getOrElse { "执行失败: ${it.message}" }
+        }
+
     fun logs(id: String, tail: Int = 200, follow: Boolean): Flow<String> = api.logs(id, tail, follow)
 
     /** 导出容器日志到文件（一次性拉 tail 行），返回文件路径。 */
