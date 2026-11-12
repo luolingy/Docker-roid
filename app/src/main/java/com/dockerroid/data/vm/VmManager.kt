@@ -121,6 +121,23 @@ object VmManager {
         appendSerial(line)
     }
 
+    /** 清空串口日志缓冲（终端的"清屏"）。 */
+    fun clearSerialLog() {
+        synchronized(serialBuffer) {
+            serialBuffer.clear()
+            _serialLog.value = emptyList()
+        }
+    }
+
+    /** 命令历史（终端 ↑↓ 用，最多 100 条）。 */
+    private val _history = mutableListOf<String>()
+    fun addHistory(cmd: String) {
+        if (cmd.isBlank()) return
+        if (_history.lastOrNull() != cmd) _history.add(cmd)
+        if (_history.size > 100) _history.removeAt(0)
+    }
+    fun history(): List<String> = synchronized(_history) { _history.toList() }
+
     // ---- 内部 ----
 
     private fun appendSerial(line: String) {

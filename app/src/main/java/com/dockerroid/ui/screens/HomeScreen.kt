@@ -90,6 +90,12 @@ fun HomeScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
 
         // 引擎系统信息（就绪时）
         if (engineOk && info != null) {
+            // 三宫格统计
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile("运行中", "${info!!.ContainersRunning}", Modifier.weight(1f), Color(0xFF2E7D32))
+                StatTile("镜像", "${info!!.Images}", Modifier.weight(1f), Color(0xFF1D63ED))
+                StatTile("全部容器", "${info!!.Containers}", Modifier.weight(1f), Color(0xFF6750A4))
+            }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("引擎", style = MaterialTheme.typography.titleMedium)
@@ -126,6 +132,16 @@ fun HomeScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(12.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun StatTile(label: String, value: String, modifier: Modifier = Modifier, accent: Color) {
+    Card(modifier) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value, style = MaterialTheme.typography.headlineSmall, color = accent)
+            Text(label, style = MaterialTheme.typography.labelSmall)
         }
     }
 }
