@@ -80,3 +80,15 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 - ⏳ 待测：完整 VM boot 到 READY（刚装含 rom 的 APK，下一步验证）
 - 已知待修：下载进度 UI 在 chunked 响应下显示 0/0（加速器无 Content-Length）
 - 镜像加速已加：ghfast.top + gh-proxy.com + 直链，自动回退
+
+## 2026-11-12 下午功能补充（等待真机测试中）
+- ✅ Dockerfile 构建 UI（POST /build，tar 上下文打包，流式日志）
+- ✅ Compose 管理（YAML 编辑/保存/导出/复制命令；rootfs 已加 podman-compose）
+- ✅ 端口转发规则管理器（持久化+列表+清理）
+- ✅ 容器日志导出到文件
+- ✅ RunDialog 加网络模式
+- ✅ 下载进度 chunked 响应显示修复
+- ✅ 设置/Home 就绪状态响应式刷新
+- ✅ execCapture API（容器内一次性命令）
+- 全部编译通过 + 单测绿
+- ⏳ 仍待真机：完整 VM boot 到 READY（rom 已打包，待测）

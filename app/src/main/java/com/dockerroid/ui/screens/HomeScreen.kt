@@ -98,8 +98,12 @@ fun HomeScreen(repo: EngineRepository, modifier: Modifier = Modifier) {
                     InfoLine("镜像", "${info!!.Images}")
                     InfoLine("架构", info!!.Architecture.ifBlank { "—" })
                     df?.let { d ->
-                        val total = d.Images.sumOf { it.Size }
-                        InfoLine("镜像占用", formatSize(total))
+                        val imgSize = d.Images.sumOf { it.Size }
+                        val volSize = 0L
+                        val total = (imgSize + volSize).coerceAtLeast(1)
+                        InfoLine("磁盘占用", formatSize(imgSize))
+                        UsageBar("镜像", imgSize, total, Color(0xFF1D63ED))
+                        Spacer(Modifier.height(4.dp))
                     }
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = { repo.prune() }) { Text("清理未使用数据 (prune)") }
@@ -132,6 +136,25 @@ private fun InfoLine(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 12.dp))
         Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** 简单占用条：label + 比例条 + 数值。 */
+@Composable
+private fun UsageBar(label: String, value: Long, total: Long, color: Color) {
+    val frac = if (total > 0) (value.toFloat() / total).coerceIn(0f, 1f) else 0f
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth()) {
+            Text(label, style = MaterialTheme.typography.labelSmall)
+            Spacer(Modifier.weight(1f))
+            Text(formatSize(value), style = MaterialTheme.typography.labelSmall)
+        }
+        Spacer(Modifier.height(2.dp))
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(8.dp)) {
+            val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2)
+            drawRoundRect(color = Color(0xFFE0E0E0), size = size, cornerRadius = r)
+            drawRoundRect(color = color, size = androidx.compose.ui.geometry.Size(size.width * frac, size.height), cornerRadius = r)
+        }
     }
 }
 
