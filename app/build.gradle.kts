@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.dockerroid"
+    namespace = "com.midsancode.docklet"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.dockerroid"
+        applicationId = "com.midsancode.docklet"
         minSdk = 26           // Android 8.0
         targetSdk = 35
         versionCode = 1

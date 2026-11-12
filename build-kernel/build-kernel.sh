@@ -20,8 +20,8 @@ cd "$OUT/linux"
 echo ">> 从 tinyconfig 起步"
 make ARCH=arm64 tinyconfig
 
-echo ">> 打开容器所需配置（见 kernel/docker-roid.config）"
-cat ../docker-roid.config >> .config 2>/dev/null || true
+echo ">> 打开容器所需配置（见 kernel/Docklet.config）"
+cat ../Docklet.config >> .config 2>/dev/null || true
 
 make ARCH=arm64 olddefconfig
 

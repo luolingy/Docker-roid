@@ -1,4 +1,4 @@
-# Docker-roid
+# Docklet
 
 在 Android 上跑容器（均衡档 VM 方案）的原生 App 骨架。
 
@@ -24,8 +24,8 @@
 ## 目录
 
 ```
-app/src/main/java/com/dockerroid/
-├── DockerDroidApp.kt          Application（Koin 初始化）
+app/src/main/java/com/docklet/
+├── DockletApp.kt          Application（Koin 初始化）
 ├── MainActivity.kt            Compose 入口
 ├── di/AppModule.kt            Koin 模块
 ├── data/
@@ -39,7 +39,7 @@ app/src/main/java/com/dockerroid/
 │       └── DockerEngineFactory.kt  Docker REST 客户端工厂
 ├── service/VmService.kt       前台服务
 └── ui/
-    ├── DockerDroidRoot.kt     底部导航
+    ├── DockletRoot.kt     底部导航
     ├── theme/Theme.kt
     └── screens/               Home / Containers / Images / Terminal / Settings
 ```
@@ -61,9 +61,9 @@ app/src/main/java/com/dockerroid/
 - Docker/Podman socket 经 SLIRP 暴露到宿主 `127.0.0.1:2375`（REST）。
 - 串口启动标记（guest 侧打印，见 `BootStage`）：
   ```
-  docker-roid: kernel up
-  docker-roid: bootstrap done
-  docker-roid: network up
-  docker-roid: engine starting
-  docker-roid: READY
+  Docklet: kernel up
+  Docklet: bootstrap done
+  Docklet: network up
+  Docklet: engine starting
+  Docklet: READY
   ```

@@ -64,15 +64,15 @@ sudo chroot "$ROOT" /bin/sh -c '
 sudo umount "$ROOT/proc" 2>/dev/null || true
 rm -f "$ROOT/usr/bin/qemu-aarch64-static" "$ROOT/etc/resolv.conf"
 
-echo ">> 安装 docker-roid 启动服务（OpenRC）"
+echo ">> 安装 Docklet 启动服务（OpenRC）"
 # 把 guest 脚本装为 OpenRC 服务 + 相关运行脚本
 mkdir -p "$ROOT/etc/init.d" "$ROOT/etc/runlevels/default" "$ROOT/usr/local/bin"
-cp build-rootfs/guest/etc/init.d/docker-roid-boot "$ROOT/etc/init.d/docker-roid" 2>/dev/null || \
-  cp guest/etc/init.d/docker-roid-boot "$ROOT/etc/init.d/docker-roid" 2>/dev/null || true
-if [ -f "$ROOT/etc/init.d/docker-roid" ]; then
-  chmod +x "$ROOT/etc/init.d/docker-roid"
+cp build-rootfs/guest/etc/init.d/docklet-boot "$ROOT/etc/init.d/docklet" 2>/dev/null || \
+  cp guest/etc/init.d/docklet-boot "$ROOT/etc/init.d/docklet" 2>/dev/null || true
+if [ -f "$ROOT/etc/init.d/docklet" ]; then
+  chmod +x "$ROOT/etc/init.d/docklet"
   # 注册到 default 运行级
-  ln -sf /etc/init.d/docker-roid "$ROOT/etc/runlevels/default/docker-roid" 2>/dev/null || true
+  ln -sf /etc/init.d/docklet "$ROOT/etc/runlevels/default/docklet" 2>/dev/null || true
 fi
 # 确保必要运行级 softlink（OpenRC 首次 boot）
 for svc in boot sysinit default; do mkdir -p "$ROOT/etc/runlevels/$svc"; done

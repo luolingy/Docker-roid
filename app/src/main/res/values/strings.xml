@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Docker-roid</string>
+    <string name="app_name">Docklet</string>
 
     <!-- 通用 -->
     <string name="action_start_vm">启动 VM</string>

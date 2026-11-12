@@ -1,4 +1,4 @@
-# Docker-roid — 在 Android 上实现 Docker 常用功能的原生应用
+# Docklet — 在 Android 上实现 Docker 常用功能的原生应用
 
 > 目标：一个 Android 原生 App，让你在手机上完成 `docker run / ps / images / pull / exec / logs / network / port / volume` 等绝大部分日常操作，且**不需要 root**。
 
@@ -18,7 +18,7 @@
 
 ### 结论
 - **要"直接拿来用"** → 用 **Podroid**。它已经实现了你想做的东西，而且是真 VM、真 Podman。
-- **要"自己写一个原生的、可定制的 Docker-roid"** → 完全可以，但核心技术路线应该是 **复用 Podroid 证明可行的那套架构**（VM + Alpine + 容器引擎），而不是从零发明。下面就是这条路线。
+- **要"自己写一个原生的、可定制的 Docklet"** → 完全可以，但核心技术路线应该是 **复用 Podroid 证明可行的那套架构**（VM + Alpine + 容器引擎），而不是从零发明。下面就是这条路线。
 
 > 换句话说：这个项目的价值不在于"能不能做"（能，Podroid 证明过了），而在于**你做一个自己的实现/精简版/教学版**，或者针对某些需求做差异化（更轻、更聚焦 Docker 而非 Podman、更好的 UI 等）。
 
@@ -140,10 +140,10 @@ Android 是 Linux 内核，但和你想象的 Linux 不一样，这是设计的�
 
 自定义服务按顺序拉起，App 通过解析串口日志追踪阶段：
 
-1. `docker-roid-bootstrap`：加载模块、挂 cgroup v2、ZRAM、devpts/shm、sysctl、hostname。
-2. `docker-roid-network`：eth0 起 `10.0.2.15/24`，设默认路由/DNS（SLIRP 提供 NAT）。
-3. `docker-roid-engine`：`dockerd` 起，监听 socket。
-4. `docker-roid-ready`：打印 `Ready!` 标记 → App 解锁终端、更新通知。
+1. `Docklet-bootstrap`：加载模块、挂 cgroup v2、ZRAM、devpts/shm、sysctl、hostname。
+2. `Docklet-network`：eth0 起 `10.0.2.15/24`，设默认路由/DNS（SLIRP 提供 NAT）。
+3. `Docklet-engine`：`dockerd` 起，监听 socket。
+4. `Docklet-ready`：打印 `Ready!` 标记 → App 解锁终端、更新通知。
 
 ---
 
@@ -157,13 +157,13 @@ Android 是 Linux 内核，但和你想象的 Linux 不一样，这是设计的�
 ### 5.2 端口转发（让容器暴露给手机和局域网）
 - guest 内 `docker run -p 8080:80 nginx` 只监听 guest 的 `10.0.2.15`。
 - 需要一个 **host→guest 转发规则**（QEMU 用 `-netdev user,hostfwd=tcp::8080-:8080` 或运行时通过 QMP 动态加；AVF 类似）。
-- 提供 CLI/图形命令：`docker-roid-forward add 8080 8080 tcp` / `list` / `remove` / `clean`。
+- 提供 CLI/图形命令：`Docklet-forward add 8080 8080 tcp` / `list` / `remove` / `clean`。
 - 这样手机浏览器访问 `http://127.0.0.1:8080`，同一局域网设备访问 `http://<手机IP>:8080` 即可看到 nginx。
 
 ### 5.3 Guest-to-Android 桥
-一个小守护 `docker-roid-hostd`：guest 内进程通过 guest 本地 unix socket 发一行请求，App 侧代为执行：
-- `docker-roid-notify` → 弹 Android 通知（比如"容器构建完成"）。
-- `docker-roid-forward` → 增删端口规则。
+一个小守护 `Docklet-hostd`：guest 内进程通过 guest 本地 unix socket 发一行请求，App 侧代为执行：
+- `Docklet-notify` → 弹 Android 通知（比如"容器构建完成"）。
+- `Docklet-forward` → 增删端口规则。
 
 ---
 
@@ -246,7 +246,7 @@ Docker Engine ──REST/events──▶ Repository ──Flow──▶ Compose 
 ## 9. 目录结构（建议）
 
 ```
-Docker-roid/
+Docklet/
 ├── app/                          # Android 应用 (Kotlin + Compose)
 │   ├── src/main/java/.../
 │   │   ├── ui/                   # Compose 屏幕：containers/images/network/terminal
@@ -307,5 +307,5 @@ Docker-roid/
 ## 12. 一句话建议
 
 > 如果目标是"拥有这个功能"，去装 Podroid；
-> 如果目标是"自己做一个原生 Docker-roid"（学习/定制/教学/差异化），
+> 如果目标是"自己做一个原生 Docklet"（学习/定制/教学/差异化），
 > 那就照本文第 2~10 节走：**App 做控制面 + UI，后台跑一个 QEMU/AVF 轻量 Linux VM，VM 里跑真 Docker Engine，App 通过 Docker REST API 驱动它**。这条路 Podroid 已经用真实产品验证过可行，你是在它铺好的轨道上换自己的车厢。

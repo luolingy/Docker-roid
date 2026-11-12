@@ -1,0 +1,85 @@
+#!/sbin/openrc-run
+# Docklet 启动服务（OpenRC）
+# 挂载虚拟文件系统、cgroup、ZRAM、网络、启动 Podman system service，
+# 并打印启动阶段标记供 Android 侧串口状态机解析。
+
+description="Docklet VM bootstrap"
+
+MARK() { echo "Docklet: $1"; }
+
+depend() {
+    need localmount
+    after bootmisc
+}
+
+start() {
+    MARK "kernel up"
+
+    # 虚拟文件系统
+    mount -t proc proc /proc 2>/dev/null || true
+    mount -t sysfs sysfs /sys 2>/dev/null || true
+    mkdir -p /dev/pts /dev/shm /dev/mqueue
+    mount -t devpts devpts /dev/pts 2>/dev/null || true
+    mount -t tmpfs tmpfs /dev/shm 2>/dev/null || true
+    mount -t mqueue mqueue /dev/mqueue 2>/dev/null || true
+
+    # cgroup v2
+    mkdir -p /sys/fs/cgroup
+    mount -t cgroup2 none /sys/fs/cgroup 2>/dev/null || true
+
+    # squashfs 只读根：整体把 /var 挂 tmpfs（podman 需要大量可写路径）
+    mkdir -p /var
+    grep -q ' /var ' /proc/mounts || mount -t tmpfs -o size=1536m tmpfs /var 2>/dev/null || true
+    for d in /var/log /var/lib/containers /var/cache/containers /var/run /var/tmp /tmp /etc/containers /run/containers /run; do
+        mkdir -p "$d"
+        grep -q " $d " /proc/mounts || mount -t tmpfs -o size=1g tmpfs "$d" 2>/dev/null || true
+    done
+    # podman 需要写 /etc/containers（只读根无法写）：挂 tmpfs 并放默认配置
+    grep -q ' /etc/containers ' /proc/mounts || mount -t tmpfs tmpfs /etc/containers 2>/dev/null || true
+    mkdir -p /etc/containers/networks /etc/containers/registries.d
+    printf 'unqualified-search-registries = ["docker.io"]\n' > /etc/containers/registries.conf 2>/dev/null || true
+    printf '{"default":[{"type":"insecureAcceptAnything"}]}\n' > /etc/containers/policy.json 2>/dev/null || true
+    printf '[network]\ndefault_network = "podman"\n' > /etc/containers/containers.conf 2>/dev/null || true
+    mkdir -p /var/lib/containers/storage /var/run/libpod
+    # DNS：/etc/resolv.conf 是指向 /run/docklet/resolv.conf 的软链（rootfs 里预先建好）
+    mkdir -p /run/docklet
+    DNS="$(sed -n 's/.*docklet.dns=\([^ ]*\).*/\1/p' /proc/cmdline)"
+    DNS="${DNS:-1.1.1.1,8.8.8.8}"
+    : > /run/docklet/resolv.conf
+    echo "$DNS" | tr ',' '\n' >> /run/docklet/resolv.conf
+    cp -f /run/docklet/resolv.conf /etc/resolv.conf 2>/dev/null || true
+    # 双保险：若 /etc/resolv.conf 不是软链（只读），尝试 bind
+    if [ ! -s /etc/resolv.conf ]; then
+        mount --bind /run/docklet/resolv.conf /etc/resolv.conf 2>/dev/null || true
+    fi
+
+    # ZRAM swap
+    if [ -e /dev/zram0 ]; then
+        echo 536870912 > /sys/block/zram0/disksize 2>/dev/null && \
+        mkswap /dev/zram0 >/dev/null 2>&1 && swapon /dev/zram0 2>/dev/null || true
+    fi
+
+    MARK "bootstrap done"
+
+    # 网络（SLIRP 固定地址）
+    ip link set eth0 up 2>/dev/null || true
+    ip addr add 10.0.2.15/24 dev eth0 2>/dev/null || true
+    ip route add default via 10.0.2.2 2>/dev/null || true
+    MARK "network up"
+
+    # 容器引擎：Podman system service 暴露 Docker 兼容 API 到 TCP 2375
+    MARK "engine starting"
+    export HOME=/root
+    (podman system service --time=0 tcp://0.0.0.0:2375 >/var/log/podman.log 2>&1 &) || true
+    i=0
+    while [ $i -lt 40 ]; do
+        if (echo > /dev/tcp/127.0.0.1/2375) 2>/dev/null; then break; fi
+        sleep 0.5; i=$((i+1))
+    done
+
+    MARK "READY"
+}
+
+stop() {
+    : # 无需清理
+}

@@ -1,4 +1,4 @@
-# 账本 — Docker-roid
+# 账本 — Docklet
 
 ## 目标
 Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容器，并提供图形化管理（容器/镜像/网络/卷/终端）。
@@ -107,3 +107,15 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 1. 完整 VM boot 到 READY（rom 已打包，QEMU 已跑通 --version）
 2. 引擎连接后各容器/镜像功能实测
 3. PODMAN system service 2375 端口可达性
+
+## 2026-11-12 界面优化（待授权真机测试）
+- ✅ 终端重做：黑底等宽主题、$ 提示符、命令历史↑↓、快捷键工具栏(Ctrl+C/Tab/清屏/复制/podman ps)、点击聚焦、自动滚底
+- ✅ Home：三宫格统计卡(运行中/镜像/全部容器) + 磁盘占用条形图
+- ✅ 容器卡片：状态胶囊 + 端口映射显示 + 紧凑图标
+- ✅ 镜像卡片：tag + sha256 短ID + 大小
+- ✅ 导航图标优化(Dns/Inventory2) + 容器详情 TopAppBar(标题=容器名)
+- ✅ 设置页下载进度条
+- 全部编译通过
+## 关键进展：真机 VM boot 已跑通到 engine starting（见上文）
+- rootfs 需开放 openrc + 可写目录挂 tmpfs（已改 build-rootfs.sh，GHA 重建中）
+- 单 drive 时 rootfs= /dev/vda

@@ -21,13 +21,13 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:name=".DockerDroidApp"
+        android:name=".DockletApp"
         android:allowBackup="false"
         android:extractNativeLibs="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DockerDroid"
+        android:theme="@style/Theme.Docklet"
         android:usesCleartextTraffic="true"
         tools:targetApi="35">
 
@@ -35,7 +35,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:theme="@style/Theme.DockerDroid">
+            android:theme="@style/Theme.Docklet">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
