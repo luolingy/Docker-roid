@@ -112,10 +112,12 @@ else
   # ext4 可写根镜像：原生可写，podman 无需 tmpfs
   echo ">> 生成 ext4 rootfs 镜像（可写根）"
   EXT4_IMG="$OUT/rootfs.ext4"
-  SIZE_MB="${ROOTFS_SIZE_MB:-1024}"
+  SIZE_MB="${ROOTFS_SIZE_MB:-512}"
   rm -f "$EXT4_IMG"
   truncate -s ${SIZE_MB}M "$EXT4_IMG"
-  mkfs.ext4 -q -F -L docklet-root -d "$ROOT" "$EXT4_IMG"
+  # mkfs.ext4 -d 填充需要 root（GHA runner 非 root，用 sudo）
+  sudo mkfs.ext4 -q -F -L docklet-root -d "$ROOT" "$EXT4_IMG" || mkfs.ext4 -q -F -L docklet-root -d "$ROOT" "$EXT4_IMG"
+  sudo chown "$(id -u):$(id -g)" "$EXT4_IMG" 2>/dev/null || true
   # 精简：ext4 image 可后续 e2fsck + resize2fs 缩容（略）
   ls -lh "$EXT4_IMG"
   echo ">> 完成：$EXT4_IMG"

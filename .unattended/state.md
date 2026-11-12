@@ -128,3 +128,11 @@ Android 原生 App，在无 root 的 Android 上通过均衡档 VM 跑真实容�
 - ✅ 内核 config 加 CONFIG_BINFMT_MISC
 - ⏳ GHA 重建 v0.4.0（内核对 nftables+binfmt，rootfs 含 amd64）
 - 待验：新内核 boot + amd64 容器运行 + bridge 网络
+
+## 2026-11-13 上午：ext4 rootfs 方案
+- 🔍 关键发现：v0.4.2 内核**确实内置 tmpfs**（Image 含 tmpfs 符号），之前 no-tmpfs-fs 是 probe 在 /proc 挂载前执行的**误报**
+- 🎯 决策：改用 ext4 可写根（rootfs.ext4），彻底绕开 tmpfs/只读写问题
+- ✅ 代码完成：VmBundle 优先 rootfs.ext4、BundleDownloader 下 rootfs.ext4、QemuRunner 用 ext4 rw、startvm 自动检测可写根、build-rootfs.sh 生成 ext4、GHA workflow 改 rootfs.ext4
+- ⚠️ 设备离线（WiFi 断），GHA 正在构建 ext4 rootfs（run 43328115115）
+- 待设备恢复：下载 ext4 rootfs → 测 podman 容器运行 + amd64 + bridge 网络
+- 注意：手机 /data 仅剩 ~780MB，ext4 镜像 512MB 勉强够；长期需更大空间
