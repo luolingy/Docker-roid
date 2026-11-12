@@ -96,9 +96,9 @@ ln -sf /etc/init.d/hostname "$ROOT/etc/runlevels/boot/hostname" 2>/dev/null || t
 # binfmt_misc 服务（支持 amd64 镜像）
 ln -sf /etc/init.d/binfmt "$ROOT/etc/runlevels/boot/binfmt" 2>/dev/null || true
 
-# /etc/resolv.conf 软链到可写 tmpfs（rootfs 只读根，podman 需要写 DNS）
+# /etc/resolv.conf 软链到 /tmp（只读根，/tmp 启动时挂 tmpfs 可写）
 rm -f "$ROOT/etc/resolv.conf" 2>/dev/null || true
-ln -sf /run/docklet/resolv.conf "$ROOT/etc/resolv.conf" 2>/dev/null || true
+ln -sf /tmp/resolv.conf "$ROOT/etc/resolv.conf" 2>/dev/null || true
 
 echo ">> 生成 squashfs (xz)"
 mksquashfs "$ROOT" "$ROOTFS_IMG" -comp xz -noappend -b 256K

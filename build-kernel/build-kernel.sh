@@ -78,6 +78,8 @@ if [ "$MISSING" -gt 0 ]; then
   ./scripts/config --file .config \
     --enable OVERLAY_FS --enable SQUASHFS --enable SQUASHFS_XZ \
     --enable USER_NS --enable MEMCG --enable ZRAM \
+    --enable TMPFS --enable SHMEM --enable TMPFS_POSIX_ACL \
+    --enable DEVTMPFS --enable DEVTMPFS_MOUNT --enable PROC_FS --enable SYSFS \
     --enable VIRTIO_CONSOLE --enable TUN --enable VETH \
     --enable BINFMT_MISC --enable BINFMT_ELF \
     --enable NETFILTER --enable NETFILTER_ADVANCED \
@@ -105,6 +107,9 @@ if [ "$MISSING" -gt 0 ]; then
 CONFIG_OVERLAY_FS
 CONFIG_EXT4_FS
 CONFIG_SQUASHFS
+CONFIG_TMPFS
+CONFIG_SHMEM
+CONFIG_DEVTMPFS
 CONFIG_VIRTIO
 CONFIG_VIRTIO_BLK
 CONFIG_VIRTIO_NET
