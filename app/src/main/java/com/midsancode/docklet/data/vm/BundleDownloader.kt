@@ -49,7 +49,7 @@ class BundleDownloader(private val context: Context) {
         val dir = context.filesDir.resolve("vm-bundle").resolve(VmBundle.BUNDLE_VERSION)
         dir.mkdirs()
 
-        for (name in listOf("Image", "rootfs.squashfs")) {
+        for (name in listOf("Image", "rootfs.ext4")) {
             val target = dir.resolve(name)
             if (target.exists() && target.length() > 0) {
                 emit(DownloadProgress(name, 1, 1, done = true))

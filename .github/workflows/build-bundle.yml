@@ -26,7 +26,7 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq qemu-user-static squashfs-tools
+          sudo apt-get install -y -qq qemu-user-static squashfs-tools e2fsprogs
 
       - name: Build rootfs
         working-directory: build-rootfs
@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rootfs
-          path: build-rootfs/out/rootfs.squashfs
+          path: build-rootfs/out/rootfs.ext4
           retention-days: 30
 
   build-kernel:
@@ -116,5 +116,5 @@ jobs:
         with:
           files: |
             bundle/Image
-            bundle/rootfs.squashfs
+            bundle/rootfs.ext4
             bundle/qemu-bundle.tar.gz

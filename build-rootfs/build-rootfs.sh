@@ -97,10 +97,26 @@ ln -sf /etc/init.d/hostname "$ROOT/etc/runlevels/boot/hostname" 2>/dev/null || t
 ln -sf /etc/init.d/binfmt "$ROOT/etc/runlevels/boot/binfmt" 2>/dev/null || true
 
 # /etc/resolv.conf 软链到 /tmp（只读根，/tmp 启动时挂 tmpfs 可写）
-rm -f "$ROOT/etc/resolv.conf" 2>/dev/null || true
-ln -sf /tmp/resolv.conf "$ROOT/etc/resolv.conf" 2>/dev/null || true
+# ext4 可写根模式下无需软链，这里仅在 squashfs 模式保留
+if [ "${ROOTFS_FORMAT:-ext4}" = "squashfs" ]; then
+  rm -f "$ROOT/etc/resolv.conf" 2>/dev/null || true
+  ln -sf /tmp/resolv.conf "$ROOT/etc/resolv.conf" 2>/dev/null || true
+fi
 
-echo ">> 生成 squashfs (xz)"
-mksquashfs "$ROOT" "$ROOTFS_IMG" -comp xz -noappend -b 256K
-ls -lh "$ROOTFS_IMG"
-echo ">> 完成：$ROOTFS_IMG"
+if [ "${ROOTFS_FORMAT:-ext4}" = "squashfs" ]; then
+  echo ">> 生成 squashfs (xz)"
+  mksquashfs "$ROOT" "$ROOTFS_IMG" -comp xz -noappend -b 256K
+  ls -lh "$ROOTFS_IMG"
+  echo ">> 完成：$ROOTFS_IMG"
+else
+  # ext4 可写根镜像：原生可写，podman 无需 tmpfs
+  echo ">> 生成 ext4 rootfs 镜像（可写根）"
+  EXT4_IMG="$OUT/rootfs.ext4"
+  SIZE_MB="${ROOTFS_SIZE_MB:-1024}"
+  rm -f "$EXT4_IMG"
+  truncate -s ${SIZE_MB}M "$EXT4_IMG"
+  mkfs.ext4 -q -F -L docklet-root -d "$ROOT" "$EXT4_IMG"
+  # 精简：ext4 image 可后续 e2fsck + resize2fs 缩容（略）
+  ls -lh "$EXT4_IMG"
+  echo ">> 完成：$EXT4_IMG"
+fi

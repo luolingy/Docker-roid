@@ -38,7 +38,9 @@ data class VmBundle(
             if (!dir.exists()) dir.mkdirs()
 
             val kernel = dir.resolve("Image")
-            val rootfs = dir.resolve("rootfs.squashfs")
+            // 优先 ext4 可写根，回退 squashfs
+            val rootfs = if (dir.resolve("rootfs.ext4").exists()) dir.resolve("rootfs.ext4")
+                         else dir.resolve("rootfs.squashfs")
             val dataImage = dir.resolve("data.ext4")
 
             // 可写盘：不存在则创建稀疏文件；已存在但比目标小则扩容（ext4 在 guest 内自动识别）
@@ -61,7 +63,8 @@ data class VmBundle(
         /** 检查底座是否完整，缺失时 UI 应提示"需要下载底座"。 */
         fun isReady(context: Context): Boolean {
             val dir = context.filesDir.resolve("vm-bundle").resolve(BUNDLE_VERSION)
-            return dir.resolve("Image").exists() && dir.resolve("rootfs.squashfs").exists()
+            val hasRoot = dir.resolve("rootfs.ext4").exists() || dir.resolve("rootfs.squashfs").exists()
+            return dir.resolve("Image").exists() && hasRoot
         }
     }
 }

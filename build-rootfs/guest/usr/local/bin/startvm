@@ -1,9 +1,8 @@
 #!/bin/busybox sh
-# Docklet 启动脚本 v7（最小挂载，避免 ELOOP）
+# Docklet 启动脚本（ext4 可写根版；若为 squashfs 只读根自动挂 tmpfs）
 MARK() { echo "Docklet: $1"; }
 MARK "kernel up"
 
-# 直接挂 devtmpfs 覆盖 squashfs 里的假 /dev（必须先挂 /dev 才能用 console）
 mount -t devtmpfs devtmpfs /dev 2>/dev/null
 mkdir -p /dev/pts /dev/shm
 mount -t devpts devpts /dev/pts 2>/dev/null
@@ -23,16 +22,24 @@ if [ -d "$BINFMT" ] && [ -n "$QX86" ] && [ ! -e "$BINFMT/qemu-x86_64" ]; then
 fi
 [ -e "$BINFMT/qemu-x86_64" ] && MARK "binfmt amd64 ready"
 
-# /var 挂 tmpfs（podman 写存储），重建子目录（/var/run 软链失效故直接建真目录）
-mount -t tmpfs -o size=1536m tmpfs /var 2>/dev/null
-mkdir -p /var/log /var/cache /var/tmp /var/lib/containers/storage /var/run /var/run/libpod 2>/dev/null
-# /run 也挂 tmpfs（/etc/resolv.conf -> /tmp/resolv.conf 用 /tmp）
-mount -t tmpfs -o size=128m tmpfs /tmp 2>/dev/null
+# 判断根是否可写：ext4 可写则直接构建可写目录；squashfs 只读则挂 tmpfs
+if touch /var/.wtest 2>/dev/null; then
+    rm -f /var/.wtest
+    MARK "root writable (ext4)"
+    mkdir -p /var/log /var/cache /var/tmp /var/lib/containers/storage /var/run /run 2>/dev/null
+else
+    MARK "root readonly, mount tmpfs"
+    mount -t tmpfs -o size=1536m tmpfs /var 2>/dev/null
+    mkdir -p /var/log /var/cache /var/tmp /var/lib/containers/storage /var/run 2>/dev/null
+    mount -t tmpfs -o size=128m tmpfs /tmp 2>/dev/null
+fi
 
-# DNS -> /tmp/resolv.conf
+# DNS（/etc/resolv.conf 直写；ext4 可写）
 DNS="$(sed -n 's/.*docklet\.dns=\([^ ]*\).*/\1/p' /proc/cmdline)"
 DNS="${DNS:-1.1.1.1,8.8.8.8}"
-printf '%s\n' "$DNS" | tr ',' '\n' > /tmp/resolv.conf 2>/dev/null
+mkdir -p /etc 2>/dev/null
+printf '%s\n' "$DNS" | tr ',' '\n' > /etc/resolv.conf 2>/dev/null || \
+  { mkdir -p /tmp; printf '%s\n' "$DNS" | tr ',' '\n' > /tmp/resolv.conf 2>/dev/null; }
 
 if [ -e /dev/zram0 ]; then
     echo 536870912 > /sys/block/zram0/disksize 2>/dev/null
@@ -49,14 +56,13 @@ MARK "network up"
 MARK "engine starting"
 export HOME=/root
 podman system service --time=0 tcp://0.0.0.0:2375 >/var/log/podman.log 2>&1 &
-i=0; while [ $i -lt 40 ]; do (echo > /dev/tcp/127.0.0.1/2375) 2>/dev/null && break; sleep 0.5; i=$((i+1)); done
+i=0; while [ $i -lt 20 ]; do pgrep -f "podman system service" >/dev/null 2>&1 && break; /bin/busybox sleep 1; i=$((i+1)); done
+echo "=== podman.log ==="; tail -8 /var/log/podman.log 2>&1
 MARK "READY"
 
-# 保持 init 存活：read 是 shell 内建，阻塞读 console，不依赖外部 sleep
-# 交互输入会回显并交给 shell（简单行模式）
-while read -r line; do
-    eval "$line" 2>&1
-    echo "root@docklet:~# "
-done
-# 若 console 关闭，死循环保活
+# 排障：若 podman 没立即监听，直接看端口
+echo "=== port 2375 ==="; netstat -tln 2>/dev/null | grep 2375
+
+# 保活：read 内建读 console（行模式 shell）
+while read -r line; do eval "$line" 2>&1; echo "root@docklet:~# "; done
 while true; do :; done
