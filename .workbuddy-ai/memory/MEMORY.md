@@ -1,18 +1,23 @@
-# Docklet 项目长期笔记
+# Podroid 项目长期笔记
+
+> v0.6.0 起项目由 Docklet 更名为 **Podroid**（包名 `com.midsancode.podroid`，仓库 `luolingy/Podroid`）。
+> 注意与第三方项目 `ExTV/Podroid`（Android 播客客户端）同名，讨论时需区分。
 
 ## 工程事实
-- 包名 `com.midsancode.docklet`（源码目录 `app/src/main/java/com/midsancode/docklet/`），minSdk 26 / target 35，仅 arm64。
-- 设备上历史包为 `com.dockerroid`（label "Docker-roid"），是早期版本，仍装着；两包都 debuggable，可用 `run-as`。
+- 包名 `com.midsancode.podroid`（源码目录 `app/src/main/java/com/midsancode/podroid/`），minSdk 26 / target 35，仅 arm64。
+- 设备上历史包 `com.dockerroid`（label "Docker-roid"）与 `com.midsancode.docklet` 仍装着，都是旧版；均 debuggable，可用 `run-as`。
 - QEMU 以 `libqemu-system-aarch64.so` 形式打进 jniLibs，靠 `useLegacyPackaging=true` 解到 nativeLibraryDir 才能 exec；`assets/qemu-share/*.rom` 需 `-L files/qemu/share/qemu`。
-- 底座来源：GitHub Release `luolingy/Docklet`（v0.4.2 资产：`Image` 43.5 MB、`rootfs.squashfs` 44.9 MB、`qemu-bundle.tar.gz` 32.9 MB），下载走 `ghfast.top` / `gh-proxy.com` 加速前缀。
+- 底座来源：GitHub Release `luolingy/Podroid`（v0.4.2 资产：`Image` 43.5 MB、`rootfs.squashfs` 44.9 MB、`qemu-bundle.tar.gz` 32.9 MB），下载走 `ghfast.top` / `gh-proxy.com` 加速前缀。**仓库改名后旧 release 与旧 URL 重定向都保留**，不必重传资产。
 - guest 设计：Alpine 3.20 + podman 5.2.5 + crun 1.17。
 
 ## v0.5.0 之后的工程事实（2026-11-14）
-- 版本 `0.5.0 (5)`；release 签名 `docklet-release.jks` + `keystore.properties`（均 gitignore，缺失回退 debug）。同签名可直接 `install -r` 覆盖，底座与容器数据保留。
+- 版本 `0.5.0 (5)`；release 签名 `podroid-release.jks` + `keystore.properties`（均 gitignore，缺失回退 debug）。同签名可直接 `install -r` 覆盖，底座与容器数据保留。
+- **JKS 内部别名不随文件名变**：改名后必须 `keytool -changealias -alias docklet -destalias podroid` + `keytool -storepasswd`，否则签名失败。证书 SHA-256 不变。
 - **`VmBundle.BUNDLE_VERSION = "0.1.0"` 是常量**，与 App 版本号无关 —— 升级 App 不会强制重下 88 MB 底座。
 - i18n：`values/` 英文（默认）、`values-zh/` 中文，315 个 key，两边必须对齐。语言值存 SharedPreferences（`Prefs`），因为 `attachBaseContext` 需要同步读。
 - **取文案必须用 `LocaleHelper.wrap(context)` 包过的 context**：Application / Service 的 configuration 跟随系统语言，应用内语言覆盖只套在 Activity 上。`VmManager`、`VmService` 已按此改。
-- 主题色：`BrandPalette`（blue/teal/purple/green/orange），只换 primary/tertiary 系；`DockletTheme(palette=)` 由 `MainActivity` 从 `settings.themeColor` 注入。
+- 主题色：`BrandPalette`（blue/teal/purple/green/orange），只换 primary/tertiary 系；`PodroidTheme(palette=)` 由 `MainActivity` 从 `settings.themeColor` 注入。
+- **明暗模式三态** `system/light/dark` 存 DataStore（`themeMode`），`MainActivity` 解析成 bool 传 `PodroidTheme(darkTheme=)`。语义色必须读 **`LocalDarkTheme`** 而不是 `isSystemInDarkTheme()`——用户手动选深色而系统是浅色时后者会返回浅色版。`values-night/` 放冷启动窗口底色。
 - 底栏 6 个页签在 393dp 屏每项约 65dp、可写宽约 43dp；`NavLabel` 用 `TextMeasurer` 自动降字号（11→8sp）。
 
 ## release 构建（这台机器必看）
@@ -26,8 +31,9 @@
 `-kernel Image -initrd initrd.img -append "rdinit=/init ..."`，`/dev/vda`=rootfs(squashfs 只读)、`/dev/vdb`=data.ext4。
 initramfs 由 `.work/build-initramfs.py` 生成到 `app/src/main/assets/initrd.img`（1.47 MB，含 Alpine 静态 busybox + mke2fs + musl 依赖）。
 **资产名不能带 `.gz`**：AAPT2 会把 `.gz` 资产自动解压并去掉扩展名，`assets.open("x.gz")` 直接 FileNotFound。另需 `noCompress += "img"` 才能用 `openFd()` 拿长度做幂等判断。
-`/init` 挂 squashfs、tmpfs 覆盖 /var /run /tmp、ext4 挂 /var/lib/containers（失败则 mke2fs）、整个 /etc 换 tmpfs，然后 `chroot /mnt /run/busybox sh /run/docklet-boot.sh`。
-`boot.sh` 是 PID 1：cgroup2 → resolv.conf → SLIRP 网络(10.0.2.15/24 gw 10.0.2.2) → binfmt → storage/registries/containers.conf → `podman system service --time=0 tcp://0.0.0.0:2375` → 轮询 `/proc/net/tcp` 2375 state=0A 才打印 `Docklet: READY`。
+`/init` 挂 squashfs、tmpfs 覆盖 /var /run /tmp、ext4 挂 /var/lib/containers（失败则 mke2fs）、整个 /etc 换 tmpfs，然后 `chroot /mnt /run/busybox sh /run/podroid-boot.sh`。
+`boot.sh` 是 PID 1：cgroup2 → resolv.conf → SLIRP 网络(10.0.2.15/24 gw 10.0.2.2) → binfmt → storage/registries/containers.conf → `podman system service --time=0 tcp://0.0.0.0:2375` → 轮询 `/proc/net/tcp` 2375 state=0A 才打印 `Podroid: READY`。
+QEMU 命令行参数前缀也一并改名：`podroid.dns/ram/disk/rootfs/network`，virtio-serial 端口名 `Podroid.hostd`。
 串口标记与 `VmStatus.kt` 的 `BootStage` 一一对应，改文案必须同步两边。
 
 ## 改 initramfs 的 6 条铁律（都踩过）
