@@ -36,7 +36,7 @@
 | 串口标记 | `Docklet: READY` | `Podroid: READY` |
 | 内核 cmdline | `docklet.dns=` 等 | `podroid.dns=` 等 |
 
-> 签名证书本身没换（SHA-256 `5806:E449…` 不变），只是别名和口令改成 `podroid`。
+> 签名证书本身没换（SHA-256 `58:06:E4:49:…:F1:00` 不变），只是别名和口令改成 `podroid`。
 
 ### 未改名
 
