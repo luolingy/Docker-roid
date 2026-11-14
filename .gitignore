@@ -47,3 +47,4 @@ app/src/main/assets/initrd.img
 .work/ui.xml
 
 .work/*.xml
+dist/
