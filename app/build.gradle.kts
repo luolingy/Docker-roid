@@ -17,15 +17,15 @@ val keystoreProps = Properties().apply {
 }
 
 android {
-    namespace = "com.midsancode.docklet"
+    namespace = "com.midsancode.podroid"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.midsancode.docklet"
+        applicationId = "com.midsancode.podroid"
         minSdk = 26           // Android 8.0
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
 
         // 仅 arm64（内核/QEMU 二进制都是 aarch64）
         ndk {

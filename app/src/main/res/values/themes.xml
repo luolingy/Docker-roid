@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Docklet" parent="android:Theme.Material.NoActionBar" />
+    <!--
+      只作为 Compose 挂载前的窗口主题：给一个和 Compose 背景同色的 windowBackground，
+      冷启动不会先闪一帧黑/白。深色见 values-night/themes.xml。
+      注意：parent 用 Light 变体，否则浅色模式下会先黑一下。
+    -->
+    <style name="Theme.Podroid" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
 </resources>

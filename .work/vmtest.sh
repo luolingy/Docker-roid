@@ -1,6 +1,6 @@
 #!/system/bin/sh
-cd /data/user/0/com.midsancode.docklet || exit 1
-APK=$(pm path com.midsancode.docklet | sed 's/^package://')
+cd /data/user/0/com.midsancode.podroid || exit 1
+APK=$(pm path com.midsancode.podroid | sed 's/^package://')
 LIB=$(dirname "$APK")/lib/arm64
 export LD_LIBRARY_PATH="$LIB"
 B=files/vm-bundle/0.1.0
@@ -12,7 +12,7 @@ rm -f files/v.out
   -L files/qemu/share/qemu -machine virt -cpu max -smp 2 -m 1024 -nographic \
   -kernel "$B/Image" \
   -initrd files/initrd.img \
-  -append "console=ttyAMA0 rdinit=/init docklet.dns=223.5.5.5,119.29.29.29 docklet.disk=/dev/vdb $1" \
+  -append "console=ttyAMA0 rdinit=/init podroid.dns=223.5.5.5,119.29.29.29 podroid.disk=/dev/vdb $1" \
   -drive file="$B/rootfs.squashfs",if=virtio,format=raw,readonly=on \
   -drive file="$B/data.ext4",if=virtio,format=raw \
   -netdev user,id=net0,hostfwd=tcp::2375-:2375 \

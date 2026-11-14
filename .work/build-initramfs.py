@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""构建 Docklet 的 initramfs（newc cpio + gzip）。
+"""构建 Podroid 的 initramfs（newc cpio + gzip）。
 
 产物：app/src/main/assets/initrd.cpio.gz
 内容：

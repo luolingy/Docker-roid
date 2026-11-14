@@ -1,16 +1,17 @@
-# Docklet
+# Podroid
 
 在 Android 上跑容器。原生 App + QEMU 虚拟机 + Podman，arm64 与 amd64 镜像都能跑，通过标准 Docker REST API（`127.0.0.1:2375`）对外暴露。
 
 > 完整设计与取舍见 [DESIGN.md](DESIGN.md)，版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
-## 当前版本：v0.5.0
+## 当前版本：v0.6.0
 
 - **容器运行时**：podman 5.2.5 + crun 1.17，跑在 Alpine 3.20 guest 里；arm64 原生、amd64 经 binfmt + `qemu-x86_64` 透明转译。
 - **Docker REST 全通**：`/version`、`/containers`、`/images`、`/volumes`、`/events`、`/exec`、`/build` 均可从宿主直连。
 - **界面**：主页 / 容器 / 镜像 / 资源 / 终端 / 设置六页；容器详情有日志流、资源占用、inspect 摘要、容器内执行。
 - **多语言**：简体中文 / English，切换即时生效。
 - **主题色**：蓝 / 青 / 紫 / 绿 / 橙五套强调色。
+- **明暗模式**：跟随系统 / 浅色 / 深色，三选一，切换即时生效。
 - **更新检测**：读 GitHub Releases 最新 tag 做语义化比较。
 - **崩溃自重启 + 后台保活**：崩溃后自动拉起（带防循环节流），划掉最近任务不停容器，支持开机自启。
 
@@ -30,13 +31,13 @@ App (Kotlin/Compose)
                      hostfwd 127.0.0.1:2375 ← App / 其他 App
 ```
 
-启动链路：`-kernel Image -initrd initrd.img -append "rdinit=/init"` → initramfs 挂 squashfs、tmpfs 覆盖 `/var` `/run` `/tmp` 与整个 `/etc`、ext4 挂 `/var/lib/containers` → `chroot /mnt /run/busybox sh /run/docklet-boot.sh`（PID 1）→ cgroup2 / DNS / SLIRP 网络 / binfmt / storage.conf → `podman system service` → 轮询 `/proc/net/tcp` 等 2375 进入 LISTEN 才打印 `Docklet: READY`。
+启动链路：`-kernel Image -initrd initrd.img -append "rdinit=/init"` → initramfs 挂 squashfs、tmpfs 覆盖 `/var` `/run` `/tmp` 与整个 `/etc`、ext4 挂 `/var/lib/containers` → `chroot /mnt /run/busybox sh /run/podroid-boot.sh`（PID 1）→ cgroup2 / DNS / SLIRP 网络 / binfmt / storage.conf → `podman system service` → 轮询 `/proc/net/tcp` 等 2375 进入 LISTEN 才打印 `Podroid: READY`。
 
 ## 目录
 
 ```
-app/src/main/java/com/midsancode/docklet/
-├── DockletApp.kt              Application（Koin + CrashHandler）
+app/src/main/java/com/midsancode/podroid/
+├── PodroidApp.kt              Application（Koin + CrashHandler）
 ├── MainActivity.kt            语言包装 + 主题注入 + 崩溃恢复提示
 ├── crash/CrashHandler.kt      全局异常捕获 + AlarmManager 重启 + 崩溃日志
 ├── i18n/LocaleHelper.kt       attachBaseContext 语言覆盖
@@ -52,9 +53,9 @@ app/src/main/java/com/midsancode/docklet/
 │   ├── VmService.kt           前台服务（START_STICKY + 异常自动重拉 + onTaskRemoved 保活）
 │   └── BootReceiver.kt        开机自启
 └── ui/
-    ├── DockletRoot.kt         底部导航 + 容器详情路由
+    ├── PodroidRoot.kt         底部导航 + 容器详情路由
     ├── theme/Theme.kt         5 套 BrandPalette + 深浅色
-    ├── components/DockletUi.kt 统一组件库
+    ├── components/PodroidUi.kt 统一组件库
     └── screens/               Home / Containers / ContainerDetail / Images / Resources / Terminal / Settings
 ```
 
@@ -74,11 +75,11 @@ app/src/main/java/com/midsancode/docklet/
 - Docker/Podman socket 经 SLIRP + hostfwd 暴露到宿主 `127.0.0.1:2375`（REST）。
 - 串口启动标记（guest 侧打印，见 `BootStage`，与 App 内 `boot_*` 文案一一对应）：
   ```
-  Docklet: kernel up
-  Docklet: bootstrap done
-  Docklet: network up
-  Docklet: engine starting
-  Docklet: READY
+  Podroid: kernel up
+  Podroid: bootstrap done
+  Podroid: network up
+  Podroid: engine starting
+  Podroid: READY
   ```
 - 容器网络：已发布内核没有 bridge 支持（`RTNETLINK: Not supported`），默认 `netns = "host"`。
 

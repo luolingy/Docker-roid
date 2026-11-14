@@ -27,13 +27,13 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:name=".DockletApp"
+        android:name=".PodroidApp"
         android:allowBackup="false"
         android:extractNativeLibs="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Docklet"
+        android:theme="@style/Theme.Podroid"
         android:usesCleartextTraffic="true"
         tools:targetApi="35">
 
@@ -41,7 +41,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:theme="@style/Theme.Docklet">
+            android:theme="@style/Theme.Podroid">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

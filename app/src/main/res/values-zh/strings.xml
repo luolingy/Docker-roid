@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 简体中文。key 与 values/strings.xml 一一对应。 -->
 <resources>
-    <string name="app_name">Docklet</string>
+    <string name="app_name">Podroid</string>
 
     <!-- 通用 -->
     <string name="action_start_vm">启动 VM</string>
@@ -304,6 +304,11 @@
     <string name="setting_autostart_desc">开机后自动拉起容器引擎，方便其他 App 直接连 2375</string>
 
     <string name="sec_appearance">外观</string>
+    <string name="setting_mode">明暗模式</string>
+    <string name="setting_mode_desc">默认跟随系统，切换立即生效</string>
+    <string name="mode_system">跟随系统</string>
+    <string name="mode_light">浅色</string>
+    <string name="mode_dark">深色</string>
     <string name="setting_theme">主题色</string>
     <string name="setting_theme_desc">影响按钮、选中态与强调色，立即生效</string>
     <string name="theme_blue">蓝</string>

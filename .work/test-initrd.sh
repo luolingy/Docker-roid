@@ -1,6 +1,6 @@
 #!/system/bin/sh
-cd /data/user/0/com.midsancode.docklet || exit 1
-APK=$(pm path com.midsancode.docklet | sed 's/^package://')
+cd /data/user/0/com.midsancode.podroid || exit 1
+APK=$(pm path com.midsancode.podroid | sed 's/^package://')
 LIB=$(dirname "$APK")/lib/arm64
 export LD_LIBRARY_PATH="$LIB"
 rm -f files/t.out

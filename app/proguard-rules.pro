@@ -18,10 +18,10 @@
 
 # kotlinx.serialization 生成的序列化器
 -dontnote kotlinx.serialization.**
--keepclassmembers class com.midsancode.docklet.data.docker.model.** {
+-keepclassmembers class com.midsancode.podroid.data.docker.model.** {
     *** Companion;
 }
--keepclasseswithmembers class com.midsancode.docklet.data.docker.model.** {
+-keepclasseswithmembers class com.midsancode.podroid.data.docker.model.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 

@@ -1,8 +1,53 @@
 # 更新日志
 
+## v0.6.0 — 2026-11-14
+
+**项目更名为 Podroid**（原 Docklet）。
+
+### 破坏性变更
+
+- **包名 `com.midsancode.docklet` → `com.midsancode.podroid`**，`applicationId` 随之变化。
+  在设备上算一个全新应用：旧的 Docklet 需要卸载，已下载的底座和容器数据不会迁移（重新下载即可）。
+- **guest 串口标记 `Docklet: xxx` → `Podroid: xxx`**，initramfs 已重新生成，App 与 guest 必须成对升级
+  （旧 APK 配新底座会一直停在启动中）。底座目录常量 `BUNDLE_VERSION` 未变，仍为 `0.1.0`。
+- 远程仓库 `luolingy/Docklet` → `luolingy/Podroid`。GitHub 会为旧地址保留重定向，
+  已发布的 v0.4.2 底座下载链接继续可用。
+- 内部标识同步改名：`podroid_prefs` / `podroid_settings` / `Podroid::Vm` WakeLock tag /
+  `com.midsancode.podroid.action.*` Intent action。升级用户的语言、保活等本地设置会重置为默认值。
+
+### 新功能
+
+- **明暗模式**：设置 → 外观 → 明暗模式，三选一：跟随系统 / 浅色 / 深色。
+  - 不再只依赖 `isSystemInDarkTheme()`，改由 `LocalDarkTheme` 注入，语义色（`toneColors`）跟着走，
+    手动选深色而系统是浅色时不会出现"浅底深字"的对比度事故。
+  - 新增 `values-night/` 窗口底色，冷启动不会先闪一帧不匹配的背景色。
+  - 修复窗口主题：原来是 `android:Theme.Material`（深色变体），浅色模式下冷启动会先黑一下。
+
+### 改名清单（便于排查）
+
+| 位置 | 旧 | 新 |
+|---|---|---|
+| 包名 / applicationId | `com.midsancode.docklet` | `com.midsancode.podroid` |
+| 应用显示名 | Docklet | Podroid |
+| Gradle rootProject | DockerDroid | Podroid |
+| 入口类 | `DockletApp` / `DockletRoot` | `PodroidApp` / `PodroidRoot` |
+| 主题 | `DockletTheme` / `DockletDialog` / `DockletUi.kt` | `PodroidTheme` / `PodroidDialog` / `PodroidUi.kt` |
+| 签名 | `docklet-release.jks`（alias `docklet`） | `podroid-release.jks`（alias `podroid`） |
+| 串口标记 | `Docklet: READY` | `Podroid: READY` |
+| 内核 cmdline | `docklet.dns=` 等 | `podroid.dns=` 等 |
+
+> 签名证书本身没换（SHA-256 `5806:E449…` 不变），只是别名和口令改成 `podroid`。
+
+### 未改名
+
+- `build-rootfs/`、`build-kernel/` 里仍是 Docklet 命名。它们产出的是已发布的二进制资产
+  （`rootfs.squashfs` / `Image`），本次不重建；仓库里那几份脚本与线上镜像不一致，改动无实际收益。
+
+---
+
 ## v0.5.0 — 2026-11-14
 
-这一版把 Docklet 从"能跑容器"推到"能日常用"：界面重做、双语、主题色、崩溃自恢复、后台保活、更新检测。
+这一版把 Podroid 从"能跑容器"推到"能日常用"：界面重做、双语、主题色、崩溃自恢复、后台保活、更新检测。
 
 ### 新功能
 
@@ -35,7 +80,7 @@
 
 ### 界面
 
-- 设计系统重建：统一卡片、状态胶囊、分段按钮、设置行、提示条、空状态；五个对话框收敛到同一套 `DockletDialog`。
+- 设计系统重建：统一卡片、状态胶囊、分段按钮、设置行、提示条、空状态；五个对话框收敛到同一套 `PodroidDialog`。
 - 容器详情重做：状态胶囊 + 带图标操作栏 + 四个分段页签（日志 / 资源 / 信息 / 执行），日志自动跟到最新一行并支持一键复制。
 - 主页降级加载：先出 `/_ping` + 镜像 + 容器，慢接口（`/info`、`/system/df`）后到再刷新，首屏不再转几十秒。
 - 设置页新增三个分区：外观、后台、更新。
@@ -49,7 +94,7 @@
 ### 构建
 
 - 版本号 `0.1.0 (1)` → `0.5.0 (5)`。
-- release 签名：`keystore.properties` + `docklet-release.jks`（均 gitignore）；缺失时自动回退 debug 签名，clone 下来直接 `assembleRelease` 也能出包。
+- release 签名：`keystore.properties` + `podroid-release.jks`（均 gitignore）；缺失时自动回退 debug 签名，clone 下来直接 `assembleRelease` 也能出包。
 - `buildConfig = true`（关于页与更新检测需要 `VERSION_NAME` / `VERSION_CODE`）。
 - `isShrinkResources = true`。
 

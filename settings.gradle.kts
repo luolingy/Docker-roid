@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DockerDroid"
+rootProject.name = "Podroid"
 include(":app")

@@ -5,7 +5,7 @@
   新增文案请两边同时加，key 保持一致。
 -->
 <resources>
-    <string name="app_name">Docklet</string>
+    <string name="app_name">Podroid</string>
 
     <!-- 通用 -->
     <string name="action_start_vm">Start VM</string>
@@ -308,6 +308,11 @@
     <string name="setting_autostart_desc">Brings the engine up after reboot so other apps can reach 2375</string>
 
     <string name="sec_appearance">Appearance</string>
+    <string name="setting_mode">Light / dark</string>
+    <string name="setting_mode_desc">Follows the system by default; applied instantly</string>
+    <string name="mode_system">System</string>
+    <string name="mode_light">Light</string>
+    <string name="mode_dark">Dark</string>
     <string name="setting_theme">Accent color</string>
     <string name="setting_theme_desc">Affects buttons, selection and highlights; applied instantly</string>
     <string name="theme_blue">Blue</string>

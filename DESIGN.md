@@ -1,5 +1,9 @@
 # Docklet — 在 Android 上实现 Docker 常用功能的原生应用
 
+> **更名说明（2026-11-14，v0.6.0）**：本项目已由 **Docklet** 更名为 **Podroid**。
+> 本文是立项时的设计文档，正文中的「Docklet」均指本项目。
+> 注意与下表里的第三方项目 **ExTV/Podroid** 区分——那是另一个独立开源项目，与本项目无关。
+
 > 目标：一个 Android 原生 App，让你在手机上完成 `docker run / ps / images / pull / exec / logs / network / port / volume` 等绝大部分日常操作，且**不需要 root**。
 
 ---
