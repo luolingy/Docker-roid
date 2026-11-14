@@ -49,17 +49,36 @@ class BundleDownloader(private val context: Context) {
         val dir = context.filesDir.resolve("vm-bundle").resolve(VmBundle.BUNDLE_VERSION)
         dir.mkdirs()
 
-        for (name in listOf("Image", "rootfs.ext4")) {
-            val target = dir.resolve(name)
-            if (target.exists() && target.length() > 0) {
-                emit(DownloadProgress(name, 1, 1, done = true))
+        // 每个逻辑资源给出候选资产名（按优先级）。rootfs 以 squashfs 为主，ext4 兜底。
+        val targets: List<Pair<String, List<String>>> = listOf(
+            "Image" to listOf("Image"),
+            "rootfs" to listOf("rootfs.squashfs", "rootfs.ext4"),
+        )
+
+        for ((label, names) in targets) {
+            // 已有任一候选就算就绪
+            val existing = names.map { dir.resolve(it) }.firstOrNull { it.exists() && it.length() > 0 }
+            if (existing != null) {
+                emit(DownloadProgress(existing.name, 1, 1, done = true))
                 continue
             }
-            val ok = tryDownload(name, target) { done, total ->
-                emit(DownloadProgress(name, done, total))
+            var ok = false
+            var lastName = names.first()
+            for (name in names) {
+                lastName = name
+                val target = dir.resolve(name)
+                if (tryDownload(name, target) { done, total ->
+                        emit(DownloadProgress(name, done, total))
+                    }) {
+                    emit(DownloadProgress(name, 1, 1, done = true))
+                    ok = true
+                    break
+                }
             }
-            if (!ok) { emit(DownloadProgress(name, 0, 0, error = "$name 所有镜像均失败")); return@flow }
-            emit(DownloadProgress(name, 1, 1, done = true))
+            if (!ok) {
+                emit(DownloadProgress(lastName, 0, 0, error = "$label 所有镜像均失败"))
+                return@flow
+            }
         }
     }.flowOn(Dispatchers.IO)
 

@@ -3,6 +3,8 @@ package com.midsancode.docklet.data.vm
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.midsancode.docklet.R
+import com.midsancode.docklet.i18n.LocaleHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +34,15 @@ object VmManager {
     private const val MAX_SERIAL_LINES = 400
 
     private var appContext: Context? = null
+
+    /**
+     * 取文案用的 context。
+     *
+     * 不能直接用 [appContext]：Application 的 configuration 跟随**系统**语言，
+     * 而应用内语言覆盖只套在 Activity 上（`LocaleHelper.wrap`）。
+     * 之前启动阶段胶囊在英文界面里显示中文「容器引擎启动」就是这个原因。
+     */
+    private val i18n: Context? get() = appContext?.let { LocaleHelper.wrap(it) }
 
     /** QemuRunner 注册的串口写入器（App 生命周期内只有一个 runner）。 */
     @Volatile
@@ -88,8 +99,9 @@ object VmManager {
             }
 
             stage != null -> {
-                _status.value = VmStatus.Booting(stage.label)
-                appendSerial("[host] 阶段：${stage.label}")
+                val label = i18n?.getString(stage.labelRes).orEmpty()
+                _status.value = VmStatus.Booting(label)
+                appendSerial("[host] 阶段：$label")
             }
 
             // QEMU 自身 panic / 崩溃关键字
@@ -104,7 +116,10 @@ object VmManager {
     internal fun onProcessExited(exitCode: Int) {
         appendSerial("[host] QEMU 退出，exit=$exitCode")
         _status.value = if (exitCode == 0) VmStatus.Stopped
-        else VmStatus.Error("VM 进程退出 (code=$exitCode)")
+        else VmStatus.Error(
+            i18n?.getString(R.string.vm_exit_error, exitCode)
+                ?: "VM exited (code=$exitCode)"
+        )
     }
 
     internal fun onStartFailure(message: String) {

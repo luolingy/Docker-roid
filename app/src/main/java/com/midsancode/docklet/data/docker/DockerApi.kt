@@ -31,7 +31,14 @@ class DockerApi(
     private val factory: DockerEngineFactory,
 ) {
     private val client: OkHttpClient get() = factory.client
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    // coerceInputValues：podman 的兼容层会把空字段序列化成 null（如 "Labels": null），
+    // 而我们的模型里这些字段是非空 + 有默认值。没有这个开关会直接抛
+    // "Expected start of the object '{', but had 'n' instead"。
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
     private val jsonMedia = "application/json".toMediaType()
 
     // ---- 基础封装 ----

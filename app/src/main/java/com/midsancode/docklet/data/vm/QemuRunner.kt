@@ -114,6 +114,19 @@ class QemuRunner(
         if (romDir.exists()) {
             addAll(listOf("-L", romDir.absolutePath))
         }
+        // rootfs 盘：squashfs 必须只读；ext4 可写
+        val rootDrive = buildString {
+            append("file=").append(b.rootfs.absolutePath)
+            append(",if=virtio,format=raw")
+            if (b.rootfsReadOnly) append(",readonly=on")
+        }
+        // 持久盘：/dev/vdb，首次启动由 initramfs 内 mke2fs 格式化
+        val dataDrive = "file=${b.dataImage.absolutePath},if=virtio,format=raw"
+        // 内核 cmdline 里不能出现空格；镜像站用逗号分隔（boot.sh 会换成空格再写 registries.conf）。
+        val extraCmdline = buildString {
+            if (b.mirrors.isNotBlank()) append(" docklet.mirror=").append(b.mirrors.trim())
+            if (b.networkMode.isNotBlank()) append(" docklet.network=").append(b.networkMode.trim())
+        }
         addAll(
             listOf(
                 "-machine", "virt",
@@ -122,15 +135,24 @@ class QemuRunner(
                 "-m", "${b.ramMb}",
                 "-nographic",                       // 串口 = stdio（双向）
                 "-kernel", b.kernel.absolutePath,
-                "-append", "console=ttyAMA0 root=/dev/vda rootfstype=ext4 rw " +
-                    "init=/usr/local/bin/startvm docklet.dns=${b.dnsServers} docklet.ram=${b.ramMb}",
-                "-drive", "file=${b.rootfs.absolutePath},if=virtio,format=raw",
-                "-netdev", "user,id=net0,hostfwd=tcp::${b.hostPort}-:2375,dns=${b.dnsServers.substringBefore(",")}",
+                "-initrd", b.initrd.absolutePath,
+                // rdinit：由 initramfs 的 /init 接管（挂 rootfs、准备可写层、拉起容器引擎）。
+                // 不再用 init=/usr/local/bin/startvm —— 已发布的镜像里没有该文件。
+                "-append", "console=ttyAMA0 rdinit=/init " +
+                    "docklet.dns=${b.dnsServers} docklet.ram=${b.ramMb} " +
+                    "docklet.disk=/dev/vdb docklet.rootfs=${b.rootfsType}" + extraCmdline,
+                "-drive", rootDrive,                // -> /dev/vda
+                "-drive", dataDrive,                // -> /dev/vdb
+                // 注意：这里不要加 dns=…。加了会覆盖 SLIRP 的转发目标，实测会导致
+                // guest DNS 直接超时（1.1.1.1 在国内常不可达）。不加则由 SLIRP 转发到
+                // 手机自身的 DNS，guest 内 resolv.conf 首行写 10.0.2.3 即可。
+                "-netdev", "user,id=net0,hostfwd=tcp::${b.hostPort}-:2375",
                 "-device", "virtio-net-pci,netdev=net0",
                 "-qmp", "unix:${b.qmpSocket.absolutePath},server=on,wait=off",
                 "-chardev", "socket,id=hostd,path=${b.hostdSocket.absolutePath},server=on,wait=off",
                 "-device", "virtio-serial-pci",
                 "-device", "virtserialport,chardev=hostd,name=Docklet.hostd",
+                "-no-reboot",                       // guest panic 直接退出，不要空转重启
             )
         )
     }

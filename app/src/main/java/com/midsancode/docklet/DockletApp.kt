@@ -1,6 +1,7 @@
 package com.midsancode.docklet
 
 import android.app.Application
+import com.midsancode.docklet.crash.CrashHandler
 import com.midsancode.docklet.data.docker.EngineRepository
 import com.midsancode.docklet.data.vm.VmManager
 import com.midsancode.docklet.di.appModule
@@ -13,6 +14,8 @@ class DockletApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // 最先装崩溃兜底：后面任何一步抛异常都能记录 + 自动重启
+        CrashHandler.install(this)
         startKoin {
             androidContext(this@DockletApp)
             modules(appModule)

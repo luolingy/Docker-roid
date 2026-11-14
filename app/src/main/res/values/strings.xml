@@ -1,21 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  默认语言：英文。
+  设备语言不是中文时落到这里；中文见 values-zh/strings.xml。
+  新增文案请两边同时加，key 保持一致。
+-->
 <resources>
     <string name="app_name">Docklet</string>
 
     <!-- 通用 -->
-    <string name="action_start_vm">启动 VM</string>
-    <string name="action_stop_vm">停止 VM</string>
+    <string name="action_start_vm">Start VM</string>
+    <string name="action_stop_vm">Stop VM</string>
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_close">Close</string>
+    <string name="common_save">Save</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_copy">Copy</string>
+    <string name="common_refresh">Refresh</string>
+    <string name="common_custom">Custom…</string>
+    <string name="common_back">Back</string>
+    <string name="common_create">Create</string>
+    <string name="action_start">Start</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_export">Export</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_restart">Restart</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_commit">Commit</string>
+    <string name="action_execute">Run</string>
+    <string name="action_collapse">Collapse</string>
+    <string name="action_expand">Expand</string>
+    <string name="action_clear">Clear</string>
 
     <!-- 底部导航 -->
-    <string name="nav_home">主页</string>
-    <string name="nav_containers">容器</string>
-    <string name="nav_images">镜像</string>
-    <string name="nav_terminal">终端</string>
-    <string name="nav_settings">设置</string>
-    <string name="nav_resources">资源</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_containers">Containers</string>
+    <string name="nav_images">Images</string>
+    <string name="nav_terminal">Terminal</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_resources">Resources</string>
 
     <!-- VM 状态 -->
-    <string name="vm_status_stopped">已停止</string>
-    <string name="vm_status_booting">启动中…</string>
-    <string name="vm_status_ready">就绪</string>
-    <string name="vm_status_error">错误</string>
+    <string name="vm_status_stopped">Stopped</string>
+    <string name="vm_status_booting">Starting…</string>
+    <string name="vm_status_ready">Ready</string>
+    <string name="vm_status_error">Error</string>
+    <string name="vm_exit_error">VM exited (code=%1$d)</string>
+
+    <!-- 启动阶段（与 guest 串口标记一一对应） -->
+    <string name="boot_kernel">Kernel loaded</string>
+    <string name="boot_bootstrap">Initializing system</string>
+    <string name="boot_network">Network ready</string>
+    <string name="boot_engine">Starting container engine</string>
+    <string name="boot_ready">Ready</string>
+
+    <!-- 通知 -->
+    <string name="notif_channel_vm">VM status</string>
+    <string name="notif_channel_vm_desc">Shows whether the Linux VM and container engine are running</string>
+
+    <!-- 崩溃恢复 -->
+    <string name="crash_recovered">Last session ended unexpectedly and was restored automatically.</string>
+
+    <!-- 主页 -->
+    <string name="home_need_bundle_title">VM base image missing</string>
+    <string name="home_need_bundle_desc">Kernel + rootfs + QEMU (about 88 MB). Download once before the first start.</string>
+    <string name="home_go_settings">Download in settings</string>
+    <string name="stat_running">Running</string>
+    <string name="stat_images">Images</string>
+    <string name="stat_containers">Containers</string>
+    <string name="engine_title">Engine</string>
+    <string name="engine_loading">Reading engine info…</string>
+    <string name="kv_version">Version</string>
+    <string name="kv_arch">Arch</string>
+    <string name="kv_containers">Containers</string>
+    <string name="kv_images">Images</string>
+    <string name="kv_disk">Disk usage</string>
+    <string name="kv_id">ID</string>
+    <string name="kv_name">Name</string>
+    <string name="kv_state">State</string>
+    <string name="kv_image">Image</string>
+    <string name="kv_started">Started</string>
+    <string name="kv_port">Port</string>
+    <string name="kv_mount">Mount</string>
+    <string name="kv_containers_value">%1$d running / %2$d total</string>
+    <string name="home_prune">Prune unused data</string>
+    <string name="home_pruned">Freed %1$s</string>
+    <string name="home_boot_log">Boot log</string>
+    <string name="home_no_output">(no output yet)</string>
+    <string name="hero_ready_engine">Engine ready · Docker API 127.0.0.1:%1$d</string>
+    <string name="hero_ready_connecting">VM ready, connecting to engine…</string>
+    <string name="hero_booting">Booting kernel and starting Podman, usually 30–60 s</string>
+    <string name="hero_stopping">Stopping…</string>
+    <string name="hero_stopped">VM is not running. Start it to run containers.</string>
+    <string name="hero_error">Start failed. Expand the log below for details.</string>
+    <string name="hero_status_error_short">Start failed</string>
+
+    <!-- 容器 -->
+    <string name="containers_title">Containers</string>
+    <string name="containers_sub_vm_not_ready">VM not ready</string>
+    <string name="containers_sub_connecting">Connecting to engine…</string>
+    <string name="containers_sub_count">%1$d containers · %2$d running</string>
+    <string name="containers_empty_vm_title">Engine is not up yet</string>
+    <string name="containers_empty_vm_stopped">Go to Home and tap “Start VM”. It takes about 30–60 s.</string>
+    <string name="containers_empty_vm_booting">VM starting: %1$s</string>
+    <string name="containers_empty_vm_error">VM failed to start: %1$s</string>
+    <string name="containers_empty_engine_title">Engine not connected</string>
+    <string name="containers_empty_engine_msg">Waiting for the Podman system service to listen…</string>
+    <string name="containers_empty_title">No containers yet</string>
+    <string name="containers_empty_msg">Tap “Run container” at the bottom right and pick an image.</string>
+    <string name="action_run_container">Run container</string>
+
+    <!-- 镜像 -->
+    <string name="images_title">Images</string>
+    <string name="images_sub_empty">No local images</string>
+    <string name="images_sub_count">%1$d · %2$s total</string>
+    <string name="images_pull">Pull image</string>
+    <string name="images_build">Build</string>
+    <string name="images_not_ready_title">Image service not ready</string>
+    <string name="images_not_ready_stopped">Start the VM on the Home tab first.</string>
+    <string name="images_not_ready_booting">VM starting…</string>
+    <string name="images_not_ready_error">VM failed to start</string>
+    <string name="images_engine_off_title">Engine not connected</string>
+    <string name="images_engine_off_msg">Waiting for the Podman service to listen…</string>
+    <string name="images_empty_title">No local images</string>
+    <string name="images_empty_msg">Tap “Pull image” and try nginx:alpine — mirrors are preconfigured.</string>
+    <string name="images_pull_title">Pull image</string>
+    <string name="images_pull_label">Image name</string>
+    <string name="images_pull_action">Pull</string>
+
+    <!-- 资源 -->
+    <string name="resources_title">Resources</string>
+    <string name="resources_sub">Networks %1$d · Volumes %2$d</string>
+    <string name="resources_tab_networks">Networks</string>
+    <string name="resources_tab_volumes">Volumes</string>
+    <string name="resources_new_network">New network</string>
+    <string name="resources_new_volume">New volume</string>
+    <string name="resources_empty_net_title">No custom networks</string>
+    <string name="resources_empty_net_msg">The built-in podman / host / none networks cannot be removed.</string>
+    <string name="resources_empty_vol_title">No volumes</string>
+    <string name="resources_empty_vol_msg">Volumes keep data across container rebuilds.</string>
+    <string name="resources_net_name">Network name</string>
+    <string name="resources_vol_name">Volume name</string>
+    <string name="resources_net_meta">scope=%1$s · containers %2$d</string>
+    <string name="resources_compose_title">Compose</string>
+    <string name="resources_compose_sub">Edit docker-compose.yml, then run podman-compose up -d in Terminal</string>
+    <string name="port_forward">Port forwarding</string>
+
+    <!-- 终端 -->
+    <string name="terminal_booting">Starting: %1$s</string>
+    <string name="terminal_error">Error: %1$s</string>
+    <string name="terminal_vm_not_running">VM not running</string>
+    <string name="terminal_clear">Clear</string>
+    <string name="terminal_waiting">(waiting for VM output…)</string>
+
+    <!-- 构建镜像 -->
+    <string name="build_title">Build image</string>
+    <string name="build_sub">Paste a Dockerfile and produce a local image</string>
+    <string name="build_action">Build</string>
+    <string name="build_running">Building…</string>
+    <string name="build_tag">Image tag</string>
+    <string name="build_log">Build log</string>
+    <string name="build_hint">The build context only contains this Dockerfile; COPY / ADD of local files will fail.</string>
+
+    <!-- 运行容器 -->
+    <string name="run_title">Run container</string>
+    <string name="run_sub">Pick an image, add ports and mounts as needed</string>
+    <string name="run_create">Create and start</string>
+    <string name="run_image">Image</string>
+    <string name="run_local_images">Local images</string>
+    <string name="run_name">Container name (optional)</string>
+    <string name="run_cmd">Command (optional)</string>
+    <string name="run_cmd_ph">Leave empty to use the image default</string>
+    <string name="run_advanced_hide">Hide advanced options</string>
+    <string name="run_advanced_show">Advanced: ports / env / mounts / network</string>
+    <string name="run_ports">Port mappings</string>
+    <string name="run_ports_hint">One host:container per line</string>
+    <string name="run_env">Environment</string>
+    <string name="run_env_hint">One KEY=VALUE per line</string>
+    <string name="run_binds">Mounts</string>
+    <string name="run_binds_hint">One host_path:container_path per line</string>
+    <string name="run_network">Network (optional)</string>
+    <string name="run_network_ph">Leave empty to use the engine default (host)</string>
+    <string name="run_restart">Restart policy</string>
+    <string name="run_restart_no">Never restart</string>
+    <string name="run_restart_always">Always restart</string>
+    <string name="run_restart_unless">Restart unless stopped</string>
+    <string name="run_port_error">Bad port format: %1$s (expected host:container)</string>
+
+    <!-- 端口转发 -->
+    <string name="pf_title">Port forwarding</string>
+    <string name="pf_sub">Forward a phone port to the VM so the LAN can reach containers</string>
+    <string name="pf_hint">After starting a container with -p 8080:80, forward phone 8080 to VM 8080.</string>
+    <string name="pf_host_port">Phone port</string>
+    <string name="pf_guest_port">VM port</string>
+    <string name="pf_err_digits">Digits only</string>
+    <string name="pf_err_host_range">Must be 1024–65535</string>
+    <string name="pf_err_guest_range">Must be 1–65535</string>
+    <string name="pf_err_host">Phone port %1$s</string>
+    <string name="pf_err_guest">VM port %1$s</string>
+    <string name="pf_add">Add</string>
+    <string name="pf_clear_all">Clear all</string>
+    <string name="pf_added">✓ Added %1$d → %2$d</string>
+    <string name="pf_failed">✗ QMP failed (VM not running or unsupported)</string>
+    <string name="pf_cleared">✓ All cleared</string>
+    <string name="pf_rules">Current rules (%1$d)</string>
+    <string name="pf_empty">No forwarding rules yet</string>
+
+    <!-- 容器详情 -->
+    <string name="detail_tab_logs">Logs</string>
+    <string name="detail_tab_stats">Stats</string>
+    <string name="detail_tab_info">Info</string>
+    <string name="detail_tab_exec">Exec</string>
+    <string name="state_running">Running</string>
+    <string name="state_paused">Paused</string>
+    <string name="state_exited">Exited</string>
+    <string name="state_unknown">Unknown</string>
+    <string name="detail_rename_title">Rename container</string>
+    <string name="detail_rename_label">New name</string>
+    <string name="detail_commit_title">Commit as image</string>
+    <string name="detail_commit_label">name:tag (e.g. myimg:latest)</string>
+    <string name="detail_exec_label">Run inside the container</string>
+    <string name="detail_exec_ph">ls / or sh -c \'echo hi\'</string>
+    <string name="detail_exec_empty">(output appears here)</string>
+    <string name="detail_logs_stream_broken">(stream interrupted: %1$s)</string>
+    <string name="detail_logs_lines">%1$d lines</string>
+    <string name="detail_logs_copied">All logs copied</string>
+    <string name="detail_logs_exported">Exported to %1$s</string>
+    <string name="detail_logs_export_failed">Export failed: %1$s</string>
+    <string name="detail_logs_empty_title">No logs yet</string>
+    <string name="detail_logs_empty_msg">Container output shows up here in real time</string>
+    <string name="detail_stats_empty_title">No stats</string>
+    <string name="detail_stats_empty_msg">CPU and memory are only reported while the container runs</string>
+    <string name="detail_cpu">CPU</string>
+    <string name="detail_cpu_sub">Share of one core</string>
+    <string name="detail_cpu_value">%1$.1f%%</string>
+    <string name="detail_mem">Memory</string>
+    <string name="detail_mem_used">%1$.1f%% used</string>
+    <string name="detail_mem_used_mb">%1$.0f</string>
+    <string name="detail_mem_total"> / %1$.0f MB</string>
+    <string name="detail_loading_title">Loading…</string>
+    <string name="detail_loading_msg">Reading container config</string>
+    <string name="detail_section_basic">Basics</string>
+    <string name="detail_section_ports">Ports and mounts</string>
+    <string name="detail_title_fallback">Container details</string>
+
+    <!-- Compose -->
+    <string name="compose_editor_label">docker-compose.yml</string>
+    <string name="compose_saved">Saved to %1$s</string>
+    <string name="compose_cmd_copied">Start command copied — paste it in Terminal</string>
+    <string name="compose_exported">Exported to %1$s</string>
+    <string name="compose_reset">Reset to the sample template</string>
+    <string name="compose_copy_cmd">Copy start command</string>
+    <string name="compose_template">Sample</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_sub">Resources, network and base image</string>
+    <string name="settings_dirty_saved_restart">Saved — restart the VM to apply</string>
+    <string name="settings_dirty_saved_next">Saved — applies on next start</string>
+    <string name="settings_unsaved">Unsaved changes</string>
+    <string name="settings_fix_errors">Fix the highlighted fields first</string>
+    <string name="settings_discard">Discard</string>
+
+    <string name="sec_perf">Performance</string>
+    <string name="sec_perf_sub">Applies after VM restart · too much RAM squeezes the phone</string>
+    <string name="setting_ram">Guest memory</string>
+    <string name="setting_ram_desc">Containers and images all live in this memory</string>
+    <string name="setting_disk">Writable disk</string>
+    <string name="setting_disk_desc">Holds images and containers; sparse file, grows as used</string>
+
+    <string name="sec_network">Network</string>
+    <string name="sec_network_sub">Applies after VM restart</string>
+    <string name="setting_dns">DNS</string>
+    <string name="setting_dns_desc">Resolves registry hostnames; keep the default in mainland China</string>
+    <string name="setting_dns_list">DNS list</string>
+    <string name="setting_dns_hint">Separate multiple values with commas</string>
+    <string name="setting_dns_empty">Enter at least one DNS</string>
+    <string name="setting_dns_invalid">Not a valid IPv4: %1$s</string>
+    <string name="setting_mirror">Registry mirror</string>
+    <string name="setting_mirror_desc">docker.io is often polluted locally; three mirrors are tried by default</string>
+    <string name="setting_mirror_label">Mirror host</string>
+    <string name="setting_mirror_hint">Host only, without https://</string>
+    <string name="setting_mirror_scheme">Do not include a scheme: %1$s</string>
+    <string name="setting_mirror_invalid">Not a valid hostname: %1$s</string>
+    <string name="setting_port">Engine port</string>
+    <string name="setting_port_desc">Port for the Docker API on the host, default 2375</string>
+    <string name="setting_port_label">Port</string>
+    <string name="setting_port_range">Range 1024–65535</string>
+    <string name="setting_port_nan">Enter a number</string>
+    <string name="setting_netmode">Container network</string>
+    <string name="setting_netmode_desc">host reuses the VM network; bridge needs kernel support</string>
+    <string name="setting_netmode_host">host (recommended)</string>
+    <string name="setting_netmode_bridge">bridge</string>
+    <string name="setting_bridge_warning">This kernel has no bridge support (RTNETLINK: Not supported); containers will fail to start in bridge mode. Rebuild the kernel for isolated networks.</string>
+    <string name="current_label">Current</string>
+    <string name="current_effective">Effective</string>
+    <string name="preset_auto">Auto</string>
+    <string name="dns_preset_cn">China</string>
+    <string name="dns_preset_ali">AliDNS</string>
+    <string name="dns_preset_tencent">DNSPod</string>
+    <string name="dns_preset_google">Google</string>
+
+    <string name="sec_startup">Startup</string>
+    <string name="setting_autostart">Start VM on boot</string>
+    <string name="setting_autostart_desc">Brings the engine up after reboot so other apps can reach 2375</string>
+
+    <string name="sec_appearance">Appearance</string>
+    <string name="setting_theme">Accent color</string>
+    <string name="setting_theme_desc">Affects buttons, selection and highlights; applied instantly</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_teal">Teal</string>
+    <string name="theme_purple">Purple</string>
+    <string name="theme_green">Green</string>
+    <string name="theme_orange">Orange</string>
+    <string name="setting_language">Language</string>
+    <string name="setting_language_desc">Applied instantly; System follows the device</string>
+    <string name="lang_system">System</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_en">English</string>
+
+    <string name="sec_keepalive">Background</string>
+    <string name="keepalive_switch">Keep running in background</string>
+    <string name="keepalive_switch_desc">Swiping the app away will not stop containers</string>
+    <string name="battery_opt">Ignore battery optimization</string>
+    <string name="battery_opt_on">Whitelisted</string>
+    <string name="battery_opt_off">Not whitelisted — the system may throttle the VM</string>
+    <string name="battery_opt_action">Open settings</string>
+    <string name="crash_log">Last crash log</string>
+    <string name="crash_log_none">No crash recorded</string>
+    <string name="crash_log_view">View</string>
+
+    <string name="sec_bundle">VM base image</string>
+    <string name="sec_bundle_sub">Kernel + rootfs + QEMU, about 88 MB</string>
+    <string name="bundle_ready">Ready</string>
+    <string name="bundle_not_ready">Not ready, download required</string>
+    <string name="bundle_download">Download base image</string>
+    <string name="bundle_downloading">Downloading…</string>
+    <string name="bundle_prepare">Preparing…</string>
+    <string name="bundle_failed">Failed: %1$s</string>
+    <string name="bundle_done">Base image ready</string>
+    <string name="bundle_incomplete">Download incomplete, please retry</string>
+    <string name="bundle_progress">%1$s: %2$.1f / %3$.1f MB</string>
+    <string name="bundle_progress_nolen">%1$s: %2$.1f MB</string>
+    <string name="bundle_file_done">%1$s done</string>
+
+    <string name="sec_diag">Diagnostics</string>
+    <string name="diag_desc">Export serial log, QEMU command line and device info for troubleshooting.</string>
+    <string name="diag_export">Export diagnostics</string>
+    <string name="diag_exported">Exported: %1$s</string>
+
+    <string name="sec_update">Update</string>
+    <string name="update_current">Current version</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_latest">You are on the latest version</string>
+    <string name="update_available">New version %1$s available</string>
+    <string name="update_failed">Check failed: %1$s</string>
+    <string name="update_go">Download</string>
+
+    <string name="sec_about">About</string>
+    <string name="about_form">Runtime</string>
+    <string name="about_arch">Architectures</string>
 </resources>

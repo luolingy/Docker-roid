@@ -16,6 +16,12 @@
     <!-- 常驻通知（Android 13+ 需运行时申请） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 开机自启 VM（配合设置里的「随开机自动启动」开关） -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- 引导用户把 App 加入电池优化白名单，避免后台 QEMU 被系统冻结 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <!-- 允许从 Downloads 读取导入的镜像/底座 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -51,6 +57,17 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Runs a local Linux virtual machine to host container workloads requested by the user." />
         </service>
+
+        <!-- 开机自启：仅在用户开启「随开机自动启动 VM」时拉起服务 -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

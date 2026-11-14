@@ -1,8 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+// release 签名：口令放在 keystore.properties（已 gitignore），缺失时回退 debug 签名，
+// 保证 clone 下来直接 assembleRelease 也能出包（只是不可上架）。
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -13,8 +24,8 @@ android {
         applicationId = "com.midsancode.docklet"
         minSdk = 26           // Android 8.0
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 5
+        versionName = "0.5.0"
 
         // 仅 arm64（内核/QEMU 二进制都是 aarch64）
         ndk {
@@ -24,13 +35,30 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropsFile.exists()) {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = if (keystorePropsFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
         debug {
             isMinifyEnabled = false
@@ -47,6 +75,8 @@ android {
 
     buildFeatures {
         compose = true
+        // 关于页与更新检测需要 BuildConfig.VERSION_NAME / VERSION_CODE
+        buildConfig = true
     }
 
     packaging {
@@ -57,6 +87,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    androidResources {
+        // initrd.img 内部已是 gzip，不需要再压；不压缩才能用 assets.openFd() 拿到长度，
+        // 从而做「大小一致就跳过解压」的幂等判断。
+        noCompress += "img"
     }
 
     // 大体积底座（rootfs/kernel/qemu）不在此打包，改为首次启动按需下载

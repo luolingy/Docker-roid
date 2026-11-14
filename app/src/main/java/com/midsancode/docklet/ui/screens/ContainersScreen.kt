@@ -1,8 +1,6 @@
 package com.midsancode.docklet.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,18 +12,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,17 +35,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.midsancode.docklet.R
 import com.midsancode.docklet.data.docker.EngineRepository
 import com.midsancode.docklet.data.docker.model.ContainerSummary
 import com.midsancode.docklet.data.vm.VmManager
 import com.midsancode.docklet.data.vm.VmStatus
+import com.midsancode.docklet.ui.components.EmptyState
+import com.midsancode.docklet.ui.components.ScreenHeader
+import com.midsancode.docklet.ui.components.StatusDot
+import com.midsancode.docklet.ui.components.StatusPill
+import com.midsancode.docklet.ui.components.dockletCardColors
+import com.midsancode.docklet.ui.theme.stateTone
 
 /**
- * 容器列表：状态灯 + 名称/镜像 + 启停/暂停/删除。
+ * 容器列表：状态灯 + 名称/镜像 + 启停/删除。
  * 数据来自 EngineRepository（自动轮询 + Ready 后刷新）。
  */
 @Composable
@@ -61,39 +64,95 @@ fun ContainersScreen(
     val state by repo.containers.collectAsState()
     val engineOk by repo.engineAvailable.collectAsState()
     val vmStatus by VmManager.status.collectAsState()
+    // 委托属性不能 smart cast，先取快照
+    val vs = vmStatus
     var showRunDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { if (engineOk) showRunDialog = true },
-            ) { Icon(Icons.Filled.Add, "新建容器") }
+            // 引擎没连上时直接不显示：之前是个看着能点、点了没反应的死按钮。
+            if (engineOk) {
+                ExtendedFloatingActionButton(
+                    onClick = { showRunDialog = true },
+                    icon = { Icon(Icons.Rounded.Add, null) },
+                    text = { Text(stringResource(R.string.action_run_container)) },
+                )
+            }
         },
     ) { inner ->
-    Column(Modifier.padding(inner).fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("容器 (${state.items.size})", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.weight(1f))
-            if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-            IconButton(onClick = { repo.refreshContainers() }) {
-                Icon(Icons.Filled.Refresh, "刷新")
-            }
-        }
-
-        when {
-            vmStatus !is VmStatus.Ready -> NotReadyHint(vmStatus)
-            !engineOk -> Text(
-                "引擎未连接（等待 Podman system service…）",
-                color = MaterialTheme.colorScheme.error,
+        Column(
+            Modifier.padding(inner).fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .padding(top = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            ScreenHeader(
+                title = stringResource(R.string.containers_title),
+                subtitle = when {
+                    vs !is VmStatus.Ready -> stringResource(R.string.containers_sub_vm_not_ready)
+                    !engineOk -> stringResource(R.string.containers_sub_connecting)
+                    else -> stringResource(
+                        R.string.containers_sub_count,
+                        state.items.size,
+                        state.items.count { it.State == "running" },
+                    )
+                },
+                trailing = {
+                    if (state.loading) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    IconButton(onClick = { repo.refreshContainers() }) {
+                        Icon(
+                            Icons.Rounded.Refresh,
+                            contentDescription = stringResource(R.string.common_refresh),
+                        )
+                    }
+                },
             )
-            else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(state.items, key = { it.Id }) { c ->
-                    ContainerCard(c, repo, onClick = { onOpenDetail(c.Id) })
+
+            when {
+                vs !is VmStatus.Ready -> EmptyState(
+                    icon = Icons.Rounded.Dns,
+                    title = stringResource(R.string.containers_empty_vm_title),
+                    message = when (vs) {
+                        is VmStatus.Stopped -> stringResource(R.string.containers_empty_vm_stopped)
+                        is VmStatus.Booting -> stringResource(
+                            R.string.containers_empty_vm_booting,
+                            vs.bootStage ?: "…",
+                        )
+                        is VmStatus.Error -> stringResource(
+                            R.string.containers_empty_vm_error,
+                            vs.message,
+                        )
+                        else -> "…"
+                    },
+                )
+
+                !engineOk -> EmptyState(
+                    icon = Icons.Rounded.Dns,
+                    title = stringResource(R.string.containers_empty_engine_title),
+                    message = stringResource(R.string.containers_empty_engine_msg),
+                )
+
+                state.items.isEmpty() -> EmptyState(
+                    icon = Icons.Rounded.Dns,
+                    title = stringResource(R.string.containers_empty_title),
+                    message = stringResource(R.string.containers_empty_msg),
+                )
+
+                else -> LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(state.items, key = { it.Id }) { c ->
+                        ContainerCard(c, repo, onClick = { onOpenDetail(c.Id) })
+                    }
+                    item { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
-    }
     }
 
     if (showRunDialog) {
@@ -102,79 +161,85 @@ fun ContainersScreen(
 }
 
 @Composable
-private fun NotReadyHint(vmStatus: com.midsancode.docklet.data.vm.VmStatus) {
-    Text(
-        when (vmStatus) {
-            is com.midsancode.docklet.data.vm.VmStatus.Stopped -> "VM 未启动，请到主页启动。"
-            is com.midsancode.docklet.data.vm.VmStatus.Booting -> "VM 启动中：${vmStatus.bootStage ?: "…"}"
-            is com.midsancode.docklet.data.vm.VmStatus.Error -> "VM 错误：${vmStatus.message}"
-            else -> "…"
-        },
-        style = MaterialTheme.typography.bodyMedium,
-    )
-}
-
-@Composable
 private fun ContainerCard(c: ContainerSummary, repo: EngineRepository, onClick: () -> Unit = {}) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp)) {
+    val tone = stateTone(c.State)
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), colors = dockletCardColors()) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(10.dp).background(stateColor(c.State), CircleShape))
+                StatusDot(tone, size = 9)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     c.Names.firstOrNull()?.removePrefix("/") ?: c.Id.take(12),
                     style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.width(6.dp))
-                // 状态胶囊
-                Box(
-                    Modifier.background(stateColor(c.State).copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(c.State, style = MaterialTheme.typography.labelSmall, color = stateColor(c.State))
-                }
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = { repo.startContainer(c.Id) }, enabled = c.State != "running", modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Filled.PlayArrow, "启动")
-                }
-                IconButton(onClick = { repo.stopContainer(c.Id) }, enabled = c.State == "running" || c.State == "paused", modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Filled.Stop, "停止")
-                }
-                IconButton(onClick = { repo.removeContainer(c.Id, force = false) }, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Filled.Delete, "删除")
-                }
+                Spacer(Modifier.width(8.dp))
+                StatusPill(c.State, tone)
             }
-            Spacer(Modifier.height(4.dp))
+
+            Spacer(Modifier.height(6.dp))
             Text(
                 c.Image,
                 fontFamily = FontFamily.Monospace,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            // 端口映射
-            val ports = c.Ports.filter { it.PublicPort != null }
-            if (ports.isNotEmpty()) {
+
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val ports = c.Ports.filter { it.PublicPort != null }
                 Text(
-                    ports.joinToString("  ") { "${it.PublicPort}→${it.PrivatePort}/${it.Type}" },
-                    fontFamily = FontFamily.Monospace,
+                    if (ports.isNotEmpty()) {
+                        ports.joinToString("  ") { "${it.PublicPort}→${it.PrivatePort}/${it.Type}" }
+                    } else {
+                        c.Status
+                    },
+                    fontFamily = if (ports.isNotEmpty()) FontFamily.Monospace else null,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (ports.isNotEmpty()) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
-            } else {
-                Text(c.Status, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // 操作区右对齐，图标按钮缩小到 34dp，避免抢标题的视觉重量
+                IconButton(
+                    onClick = { repo.startContainer(c.Id) },
+                    enabled = c.State != "running",
+                    modifier = Modifier.size(34.dp),
+                ) {
+                    Icon(
+                        Icons.Rounded.PlayArrow,
+                        contentDescription = stringResource(R.string.action_start),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                IconButton(
+                    onClick = { repo.stopContainer(c.Id) },
+                    enabled = c.State == "running" || c.State == "paused",
+                    modifier = Modifier.size(34.dp),
+                ) {
+                    Icon(
+                        Icons.Rounded.Stop,
+                        contentDescription = stringResource(R.string.action_stop),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                IconButton(
+                    onClick = { repo.removeContainer(c.Id, force = false) },
+                    modifier = Modifier.size(34.dp),
+                ) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = stringResource(R.string.common_delete),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
     }
-}
-
-private fun stateColor(state: String): Color = when (state) {
-    "running" -> Color(0xFF2E7D32)
-    "paused" -> Color(0xFFF9A825)
-    "exited" -> Color(0xFF757575)
-    "restarting" -> Color(0xFF1565C0)
-    else -> Color(0xFF9E9E9E)
 }

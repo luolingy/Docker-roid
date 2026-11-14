@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 简体中文。key 与 values/strings.xml 一一对应。 -->
+<resources>
+    <string name="app_name">Docklet</string>
+
+    <!-- 通用 -->
+    <string name="action_start_vm">启动 VM</string>
+    <string name="action_stop_vm">停止 VM</string>
+    <string name="common_ok">确定</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_close">关闭</string>
+    <string name="common_save">保存</string>
+    <string name="common_delete">删除</string>
+    <string name="common_copy">复制</string>
+    <string name="common_refresh">刷新</string>
+    <string name="common_custom">自定义…</string>
+    <string name="common_back">返回</string>
+    <string name="common_create">创建</string>
+    <string name="action_start">启动</string>
+    <string name="action_stop">停止</string>
+    <string name="action_export">导出</string>
+    <string name="action_copy">复制</string>
+    <string name="action_pause">暂停</string>
+    <string name="action_resume">恢复</string>
+    <string name="action_restart">重启</string>
+    <string name="action_rename">重命名</string>
+    <string name="action_commit">提交镜像</string>
+    <string name="action_execute">执行</string>
+    <string name="action_collapse">收起</string>
+    <string name="action_expand">展开</string>
+    <string name="action_clear">清空</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_home">主页</string>
+    <string name="nav_containers">容器</string>
+    <string name="nav_images">镜像</string>
+    <string name="nav_terminal">终端</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_resources">资源</string>
+
+    <!-- VM 状态 -->
+    <string name="vm_status_stopped">已停止</string>
+    <string name="vm_status_booting">启动中…</string>
+    <string name="vm_status_ready">就绪</string>
+    <string name="vm_status_error">错误</string>
+    <string name="vm_exit_error">VM 进程退出 (code=%1$d)</string>
+
+    <!-- 启动阶段（与 guest 串口标记一一对应） -->
+    <string name="boot_kernel">内核已加载</string>
+    <string name="boot_bootstrap">系统初始化</string>
+    <string name="boot_network">网络就绪</string>
+    <string name="boot_engine">容器引擎启动</string>
+    <string name="boot_ready">就绪</string>
+
+    <!-- 通知 -->
+    <string name="notif_channel_vm">VM 运行状态</string>
+    <string name="notif_channel_vm_desc">显示 Linux VM 与容器引擎的运行状态</string>
+
+    <!-- 崩溃恢复 -->
+    <string name="crash_recovered">上次运行异常退出，已自动恢复。崩溃日志可在「设置 → 诊断」查看。</string>
+
+    <!-- 主页 -->
+    <string name="home_need_bundle_title">还差 VM 底座</string>
+    <string name="home_need_bundle_desc">需要内核 + rootfs + QEMU（约 88 MB），下载完成后才能启动。</string>
+    <string name="home_go_settings">去设置页下载</string>
+    <string name="stat_running">运行中</string>
+    <string name="stat_images">镜像</string>
+    <string name="stat_containers">全部容器</string>
+    <string name="engine_title">引擎</string>
+    <string name="engine_loading">正在读取引擎信息…</string>
+    <string name="kv_version">版本</string>
+    <string name="kv_arch">架构</string>
+    <string name="kv_containers">容器</string>
+    <string name="kv_images">镜像</string>
+    <string name="kv_disk">磁盘占用</string>
+    <string name="kv_id">ID</string>
+    <string name="kv_name">名称</string>
+    <string name="kv_state">状态</string>
+    <string name="kv_image">镜像</string>
+    <string name="kv_started">启动于</string>
+    <string name="kv_port">端口</string>
+    <string name="kv_mount">挂载</string>
+    <string name="kv_containers_value">%1$d 运行 / %2$d 总</string>
+    <string name="home_prune">清理未使用数据</string>
+    <string name="home_pruned">已释放 %1$s</string>
+    <string name="home_boot_log">启动日志</string>
+    <string name="home_no_output">（尚无输出）</string>
+    <string name="hero_ready_engine">容器引擎已就绪 · Docker API 127.0.0.1:%1$d</string>
+    <string name="hero_ready_connecting">VM 就绪，正在连接引擎…</string>
+    <string name="hero_booting">正在引导内核并拉起 Podman，通常 30–60 秒</string>
+    <string name="hero_stopping">正在停止…</string>
+    <string name="hero_stopped">VM 未运行，启动后即可运行容器</string>
+    <string name="hero_error">启动失败，展开下方日志查看原因</string>
+    <string name="hero_status_error_short">启动失败</string>
+
+    <!-- 容器 -->
+    <string name="containers_title">容器</string>
+    <string name="containers_sub_vm_not_ready">VM 未就绪</string>
+    <string name="containers_sub_connecting">正在连接引擎…</string>
+    <string name="containers_sub_count">%1$d 个容器 · 运行中 %2$d</string>
+    <string name="containers_empty_vm_title">容器引擎还没起来</string>
+    <string name="containers_empty_vm_stopped">请到主页点「启动 VM」，约 30–60 秒后就绪。</string>
+    <string name="containers_empty_vm_booting">VM 启动中：%1$s</string>
+    <string name="containers_empty_vm_error">VM 启动失败：%1$s</string>
+    <string name="containers_empty_engine_title">引擎未连接</string>
+    <string name="containers_empty_engine_msg">等待 Podman system service 监听端口…</string>
+    <string name="containers_empty_title">还没有容器</string>
+    <string name="containers_empty_msg">点右下角「运行容器」，选一个镜像就能跑起来。</string>
+    <string name="action_run_container">运行容器</string>
+
+    <!-- 镜像 -->
+    <string name="images_title">镜像</string>
+    <string name="images_sub_empty">还没有本地镜像</string>
+    <string name="images_sub_count">%1$d 个 · 共 %2$s</string>
+    <string name="images_pull">拉取镜像</string>
+    <string name="images_build">构建</string>
+    <string name="images_not_ready_title">镜像服务未就绪</string>
+    <string name="images_not_ready_stopped">先到主页启动 VM。</string>
+    <string name="images_not_ready_booting">VM 启动中…</string>
+    <string name="images_not_ready_error">VM 启动失败</string>
+    <string name="images_engine_off_title">引擎未连接</string>
+    <string name="images_engine_off_msg">等待 Podman 服务监听…</string>
+    <string name="images_empty_title">本地没有镜像</string>
+    <string name="images_empty_msg">点「拉取镜像」输入 nginx:alpine 试试，默认走国内镜像站。</string>
+    <string name="images_pull_title">拉取镜像</string>
+    <string name="images_pull_label">镜像名</string>
+    <string name="images_pull_action">拉取</string>
+
+    <!-- 资源 -->
+    <string name="resources_title">资源</string>
+    <string name="resources_sub">网络 %1$d · 卷 %2$d</string>
+    <string name="resources_tab_networks">网络</string>
+    <string name="resources_tab_volumes">卷</string>
+    <string name="resources_new_network">新建网络</string>
+    <string name="resources_new_volume">新建卷</string>
+    <string name="resources_empty_net_title">还没有自定义网络</string>
+    <string name="resources_empty_net_msg">默认的 podman / host / none 由引擎内置，不可删除。</string>
+    <string name="resources_empty_vol_title">还没有卷</string>
+    <string name="resources_empty_vol_msg">卷用于在容器重建后保留数据。</string>
+    <string name="resources_net_name">网络名</string>
+    <string name="resources_vol_name">卷名</string>
+    <string name="resources_net_meta">scope=%1$s · 容器 %2$d</string>
+    <string name="resources_compose_title">Compose 编排</string>
+    <string name="resources_compose_sub">编辑 docker-compose.yml，保存后在终端执行 podman-compose up -d</string>
+    <string name="port_forward">端口转发</string>
+
+    <!-- 终端 -->
+    <string name="terminal_booting">启动中：%1$s</string>
+    <string name="terminal_error">错误：%1$s</string>
+    <string name="terminal_vm_not_running">VM 未运行</string>
+    <string name="terminal_clear">清屏</string>
+    <string name="terminal_waiting">（等待 VM 输出…）</string>
+
+    <!-- 构建镜像 -->
+    <string name="build_title">构建镜像</string>
+    <string name="build_sub">粘贴 Dockerfile，产出一个本地镜像</string>
+    <string name="build_action">构建</string>
+    <string name="build_running">构建中…</string>
+    <string name="build_tag">镜像 tag</string>
+    <string name="build_log">构建日志</string>
+    <string name="build_hint">构建上下文只含这份 Dockerfile，COPY / ADD 引用本地文件会失败。</string>
+
+    <!-- 运行容器 -->
+    <string name="run_title">运行容器</string>
+    <string name="run_sub">选一个镜像，按需补充端口和挂载</string>
+    <string name="run_create">创建并启动</string>
+    <string name="run_image">镜像</string>
+    <string name="run_local_images">本地镜像</string>
+    <string name="run_name">容器名（可选）</string>
+    <string name="run_cmd">启动命令（可选）</string>
+    <string name="run_cmd_ph">留空用镜像默认命令</string>
+    <string name="run_advanced_hide">收起高级选项</string>
+    <string name="run_advanced_show">高级选项：端口 / 环境变量 / 挂载 / 网络</string>
+    <string name="run_ports">端口映射</string>
+    <string name="run_ports_hint">每行一个 host:container</string>
+    <string name="run_env">环境变量</string>
+    <string name="run_env_hint">每行一个 KEY=VALUE</string>
+    <string name="run_binds">目录挂载</string>
+    <string name="run_binds_hint">每行一个 宿主路径:容器路径</string>
+    <string name="run_network">网络（可选）</string>
+    <string name="run_network_ph">留空用引擎默认（host）</string>
+    <string name="run_restart">重启策略</string>
+    <string name="run_restart_no">不自动重启</string>
+    <string name="run_restart_always">总是重启</string>
+    <string name="run_restart_unless">非手动停止时重启</string>
+    <string name="run_port_error">端口格式错误：%1$s（应为 host:container）</string>
+
+    <!-- 端口转发 -->
+    <string name="pf_title">端口转发</string>
+    <string name="pf_sub">把手机端口转到 VM 端口，局域网即可访问容器</string>
+    <string name="pf_hint">容器用 -p 8080:80 启动后，把手机 8080 转到 VM 8080 即可。</string>
+    <string name="pf_host_port">手机端口</string>
+    <string name="pf_guest_port">VM 端口</string>
+    <string name="pf_err_digits">只能是数字</string>
+    <string name="pf_err_host_range">需在 1024–65535</string>
+    <string name="pf_err_guest_range">需在 1–65535</string>
+    <string name="pf_err_host">手机端口%1$s</string>
+    <string name="pf_err_guest">VM 端口%1$s</string>
+    <string name="pf_add">添加</string>
+    <string name="pf_clear_all">全部清理</string>
+    <string name="pf_added">✓ 已添加 %1$d → %2$d</string>
+    <string name="pf_failed">✗ QMP 失败（VM 未运行或版本不支持）</string>
+    <string name="pf_cleared">✓ 已清理全部</string>
+    <string name="pf_rules">当前规则（%1$d）</string>
+    <string name="pf_empty">还没有转发规则</string>
+
+    <!-- 容器详情 -->
+    <string name="detail_tab_logs">日志</string>
+    <string name="detail_tab_stats">资源</string>
+    <string name="detail_tab_info">详情</string>
+    <string name="detail_tab_exec">命令</string>
+    <string name="state_running">运行中</string>
+    <string name="state_paused">已暂停</string>
+    <string name="state_exited">已退出</string>
+    <string name="state_unknown">未知</string>
+    <string name="detail_rename_title">重命名容器</string>
+    <string name="detail_rename_label">新名称</string>
+    <string name="detail_commit_title">提交为镜像</string>
+    <string name="detail_commit_label">镜像名:tag（如 myimg:latest）</string>
+    <string name="detail_exec_label">在容器内执行</string>
+    <string name="detail_exec_ph">ls / 或 sh -c \'echo hi\'</string>
+    <string name="detail_exec_empty">（输出将显示在这里）</string>
+    <string name="detail_logs_stream_broken">（流中断: %1$s）</string>
+    <string name="detail_logs_lines">%1$d 行</string>
+    <string name="detail_logs_copied">已复制全部日志</string>
+    <string name="detail_logs_exported">已导出到 %1$s</string>
+    <string name="detail_logs_export_failed">导出失败: %1$s</string>
+    <string name="detail_logs_empty_title">还没有日志</string>
+    <string name="detail_logs_empty_msg">容器有输出时会实时出现在这里</string>
+    <string name="detail_stats_empty_title">没有统计数据</string>
+    <string name="detail_stats_empty_msg">容器未运行时不会上报 CPU / 内存</string>
+    <string name="detail_cpu">CPU</string>
+    <string name="detail_cpu_sub">单核占用比</string>
+    <string name="detail_cpu_value">%1$.1f%%</string>
+    <string name="detail_mem">内存</string>
+    <string name="detail_mem_used">%1$.1f%% 已用</string>
+    <string name="detail_mem_used_mb">%1$.0f</string>
+    <string name="detail_mem_total"> / %1$.0f MB</string>
+    <string name="detail_loading_title">加载中…</string>
+    <string name="detail_loading_msg">正在读取容器配置</string>
+    <string name="detail_section_basic">基本信息</string>
+    <string name="detail_section_ports">端口与挂载</string>
+    <string name="detail_title_fallback">容器详情</string>
+
+    <!-- Compose -->
+    <string name="compose_editor_label">docker-compose.yml</string>
+    <string name="compose_saved">已保存到 %1$s</string>
+    <string name="compose_cmd_copied">启动命令已复制，去终端页粘贴执行</string>
+    <string name="compose_exported">已导出到 %1$s</string>
+    <string name="compose_reset">已重置为示例模板</string>
+    <string name="compose_copy_cmd">复制启动命令</string>
+    <string name="compose_template">示例模板</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_sub">资源、网络与底座</string>
+    <string name="settings_dirty_saved_restart">改动已保存，重启 VM 后生效</string>
+    <string name="settings_dirty_saved_next">改动已保存，下次启动生效</string>
+    <string name="settings_unsaved">有未保存的改动</string>
+    <string name="settings_fix_errors">请先修正标红的输入</string>
+    <string name="settings_discard">放弃</string>
+
+    <string name="sec_perf">性能</string>
+    <string name="sec_perf_sub">重启 VM 生效 · 内存过大会挤占手机可用内存</string>
+    <string name="setting_ram">guest 内存</string>
+    <string name="setting_ram_desc">容器和镜像都跑在这块内存里</string>
+    <string name="setting_disk">可写盘</string>
+    <string name="setting_disk_desc">存放镜像与容器，稀疏文件，按实际用量增长</string>
+
+    <string name="sec_network">网络</string>
+    <string name="sec_network_sub">重启 VM 生效</string>
+    <string name="setting_dns">DNS</string>
+    <string name="setting_dns_desc">解析容器仓库域名；国内建议留默认</string>
+    <string name="setting_dns_list">DNS 列表</string>
+    <string name="setting_dns_hint">多个用英文逗号分隔</string>
+    <string name="setting_dns_empty">至少填一个 DNS</string>
+    <string name="setting_dns_invalid">不是合法 IPv4：%1$s</string>
+    <string name="setting_mirror">镜像加速</string>
+    <string name="setting_mirror_desc">docker.io 国内常被污染，默认回退三个国内站</string>
+    <string name="setting_mirror_label">镜像站地址</string>
+    <string name="setting_mirror_hint">只填域名，不要带 https://</string>
+    <string name="setting_mirror_scheme">不要带协议头：%1$s</string>
+    <string name="setting_mirror_invalid">不是合法域名：%1$s</string>
+    <string name="setting_port">引擎端口</string>
+    <string name="setting_port_desc">宿主机访问 Docker API 的端口，默认 2375</string>
+    <string name="setting_port_label">端口</string>
+    <string name="setting_port_range">范围 1024–65535</string>
+    <string name="setting_port_nan">请输入数字</string>
+    <string name="setting_netmode">容器网络</string>
+    <string name="setting_netmode_desc">host 复用 VM 网络；bridge 需内核支持</string>
+    <string name="setting_netmode_host">host（推荐）</string>
+    <string name="setting_netmode_bridge">bridge</string>
+    <string name="setting_bridge_warning">当前内核未开启 bridge 支持（RTNETLINK: Not supported），选 bridge 会导致容器无法启动。需要独立网络请先重编内核。</string>
+    <string name="current_label">当前</string>
+    <string name="current_effective">实际使用</string>
+    <string name="preset_auto">自动</string>
+    <string name="dns_preset_cn">国内</string>
+    <string name="dns_preset_ali">阿里</string>
+    <string name="dns_preset_tencent">腾讯</string>
+    <string name="dns_preset_google">谷歌</string>
+
+    <string name="sec_startup">启动</string>
+    <string name="setting_autostart">随开机自动启动 VM</string>
+    <string name="setting_autostart_desc">开机后自动拉起容器引擎，方便其他 App 直接连 2375</string>
+
+    <string name="sec_appearance">外观</string>
+    <string name="setting_theme">主题色</string>
+    <string name="setting_theme_desc">影响按钮、选中态与强调色，立即生效</string>
+    <string name="theme_blue">蓝</string>
+    <string name="theme_teal">青</string>
+    <string name="theme_purple">紫</string>
+    <string name="theme_green">绿</string>
+    <string name="theme_orange">橙</string>
+    <string name="setting_language">语言</string>
+    <string name="setting_language_desc">立即生效；跟随系统则使用设备语言</string>
+    <string name="lang_system">跟随系统</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_en">English</string>
+
+    <string name="sec_keepalive">后台保活</string>
+    <string name="keepalive_switch">后台保活</string>
+    <string name="keepalive_switch_desc">划掉最近任务也不停容器；关闭后系统可能随时冻结 VM</string>
+    <string name="battery_opt">忽略电池优化</string>
+    <string name="battery_opt_on">已加入白名单</string>
+    <string name="battery_opt_off">未加入，后台可能被系统限制</string>
+    <string name="battery_opt_action">去设置</string>
+    <string name="crash_log">上次崩溃日志</string>
+    <string name="crash_log_none">没有崩溃记录</string>
+    <string name="crash_log_view">查看</string>
+
+    <string name="sec_bundle">VM 底座</string>
+    <string name="sec_bundle_sub">内核 + rootfs + QEMU，约 88 MB</string>
+    <string name="bundle_ready">已就绪</string>
+    <string name="bundle_not_ready">未就绪，需要下载</string>
+    <string name="bundle_download">下载底座</string>
+    <string name="bundle_downloading">下载中…</string>
+    <string name="bundle_prepare">准备下载…</string>
+    <string name="bundle_failed">失败：%1$s</string>
+    <string name="bundle_done">底座已就绪</string>
+    <string name="bundle_incomplete">下载未完成，请重试</string>
+    <string name="bundle_progress">%1$s：%2$.1f / %3$.1f MB</string>
+    <string name="bundle_progress_nolen">%1$s：%2$.1f MB</string>
+    <string name="bundle_file_done">%1$s 完成</string>
+
+    <string name="sec_diag">诊断</string>
+    <string name="diag_desc">导出串口日志、QEMU 命令行与设备信息，排查启动问题用。</string>
+    <string name="diag_export">导出诊断日志</string>
+    <string name="diag_exported">已导出：%1$s</string>
+
+    <string name="sec_update">更新</string>
+    <string name="update_current">当前版本</string>
+    <string name="update_check">检查更新</string>
+    <string name="update_checking">检查中…</string>
+    <string name="update_latest">已是最新版本</string>
+    <string name="update_available">发现新版本 %1$s</string>
+    <string name="update_failed">检查失败：%1$s</string>
+    <string name="update_go">前往下载</string>
+
+    <string name="sec_about">关于</string>
+    <string name="about_form">运行形态</string>
+    <string name="about_arch">支持架构</string>
+</resources>

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.midsancode.docklet.R
 import com.midsancode.docklet.data.vm.VmManager
 import com.midsancode.docklet.data.vm.VmStatus
 
@@ -104,22 +107,33 @@ fun TerminalScreen(modifier: Modifier = Modifier) {
             Modifier.fillMaxWidth().background(Color(0xFF11161D)).padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.width(8.dp).height(8.dp).background(
-                if (ready) Color(0xFF4CAF50) else if (status is VmStatus.Booting) Color(0xFFFFB300) else Color(0xFFEF5350)
-            ))
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .background(
+                        if (ready) Color(0xFF4CAF50)
+                        else if (status is VmStatus.Booting) Color(0xFFFFB300)
+                        else Color(0xFFEF5350),
+                        androidx.compose.foundation.shape.CircleShape,
+                    )
+            )
             Spacer(Modifier.width(8.dp))
             Text(
                 when (val s = status) {
                     is VmStatus.Ready -> "root@docklet:~#"
-                    is VmStatus.Booting -> "启动中：${s.bootStage ?: "…"}"
-                    is VmStatus.Error -> "错误：${s.message.take(40)}"
-                    else -> "VM 未运行"
+                    is VmStatus.Booting -> stringResource(R.string.terminal_booting, s.bootStage ?: "…")
+                    is VmStatus.Error -> stringResource(R.string.terminal_error, s.message.take(40))
+                    else -> stringResource(R.string.terminal_vm_not_running)
                 },
                 color = fg, fontFamily = FontFamily.Monospace, fontSize = 12.sp,
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = { VmManager.clearSerialLog() }, modifier = Modifier.height(28.dp)) {
-                Icon(Icons.Filled.DeleteSweep, "清屏", tint = fg)
+                Icon(
+                    Icons.Filled.DeleteSweep,
+                    contentDescription = stringResource(R.string.terminal_clear),
+                    tint = fg,
+                )
             }
         }
 
@@ -131,7 +145,8 @@ fun TerminalScreen(modifier: Modifier = Modifier) {
                 .padding(vertical = 6.dp),
         ) {
             Text(
-                text = serial.takeLast(500).joinToString("\n").ifEmpty { "（等待 VM 输出…）" },
+                text = serial.takeLast(500).joinToString("\n")
+                    .ifEmpty { stringResource(R.string.terminal_waiting) },
                 style = mono,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -159,8 +174,8 @@ fun TerminalScreen(modifier: Modifier = Modifier) {
                     else inputValue = TextFieldValue(h[histIndex])
                 }
             }
-            TermKey("清屏") { VmManager.clearSerialLog() }
-            TermKey("复制") {
+            TermKey(stringResource(R.string.terminal_clear)) { VmManager.clearSerialLog() }
+            TermKey(stringResource(R.string.common_copy)) {
                 clipboard.setText(AnnotatedString(serial.takeLast(200).joinToString("\n")))
             }
             TermKey("podman ps") { inputValue = TextFieldValue("podman ps -a") }

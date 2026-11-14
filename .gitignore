@@ -22,6 +22,28 @@ build-qemu/out/
 Thumbs.db
 .kotlin/
 
+# 签名文件与口令（绝对不入库）
+*.jks
+*.keystore
+keystore.properties
+
 # jniLibs 由 GHA build-qemu 从 Termux 生成，不入库（约 71MB）
 app/src/main/jniLibs/
 
+# initramfs 由 .work/build-initramfs.py 生成（1.47 MB）。
+# 不入库：assets 里的大二进制会把仓库撑大，且构建前跑一次脚本即可再生。
+app/src/main/assets/initrd.img
+
+# 构建临时目录：只留脚本，产物/截图不入库
+.work/apk/
+.work/bb/
+.work/initramfs/
+.work/shots/
+.work/*.apk
+.work/*.out
+.work/*.html
+.work/*.png
+.work/*.cpio*
+.work/ui.xml
+
+.work/*.xml
